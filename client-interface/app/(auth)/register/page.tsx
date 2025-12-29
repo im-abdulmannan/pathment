@@ -5,11 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/context/AuthContext';
 import { Mail, Lock, User, ArrowRight, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 
 export default function RegisterPage() {
@@ -20,6 +15,7 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     role: 'mentee' as 'admin' | 'mentor' | 'mentee',
+    fullName: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
@@ -51,6 +47,7 @@ export default function RegisterPage() {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
+    if (!formData.fullName) newErrors.fullName = 'Full name is required';
     if (!formData.email) newErrors.email = 'Email is required';
     if (formData.password.length < 8) newErrors.password = 'Password must be at least 8 characters';
     if (formData.password !== formData.confirmPassword) {
@@ -80,152 +77,164 @@ export default function RegisterPage() {
     <div className="space-y-6">
       {/* Logo & Header */}
       <div className="text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
-          <span className="text-primary-foreground text-2xl font-bold">P</span>
+        <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl mb-4">
+          <span className="text-white text-2xl">P</span>
         </div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">Create your account</h1>
-        <p className="text-muted-foreground">Start your mentorship journey today</p>
+        <h1 className="text-indigo-900 mb-2">Create your Pathment account</h1>
+        <p className="text-slate-600">Start your mentorship journey today</p>
       </div>
 
       {/* Registration Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sign Up</CardTitle>
-          <CardDescription>Enter your details to create an account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {showSuccess && (
-            <Alert className="mb-6 border-green-200 bg-green-50">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-900">
-                Account created successfully! Redirecting to email verification...
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {errors.general && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{errors.general}</AlertDescription>
-            </Alert>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`pl-10 ${errors.email ? 'border-destructive' : ''}`}
-                  placeholder="you@example.com"
-                  required
-                />
-              </div>
-              {errors.email && (
-                <p className="text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {errors.email}
-                </p>
-              )}
+      <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
+        {showSuccess && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">
+            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-green-900">Account created successfully!</p>
+              <p className="text-green-700 text-sm mt-1">Redirecting to email verification...</p>
             </div>
+          </div>
+        )}
 
-            {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className={`pl-10 ${errors.password ? 'border-destructive' : ''}`}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              {errors.password && (
-                <p className="text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {errors.password}
-                </p>
-              )}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Full Name */}
+          <div>
+            <label className="block text-slate-700 text-sm mb-2">Full Name</label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                className={`w-full pl-11 pr-4 py-3 border ${errors.fullName ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent`}
+                placeholder="John Doe"
+              />
             </div>
+            {errors.fullName && (
+              <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.fullName}
+              </p>
+            )}
+          </div>
 
-            {/* Confirm Password */}
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  className={`pl-10 ${errors.confirmPassword ? 'border-destructive' : ''}`}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-sm text-destructive flex items-center gap-1">
-                  <AlertCircle className="h-4 w-4" />
-                  {errors.confirmPassword}
-                </p>
-              )}
+          {/* Email */}
+          <div>
+            <label className="block text-slate-700 text-sm mb-2">Email Address</label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className={`w-full pl-11 pr-4 py-3 border ${errors.email ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent`}
+                placeholder="you@example.com"
+              />
             </div>
+            {errors.email && (
+              <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.email}
+              </p>
+            )}
+          </div>
 
-            {/* Role Selection */}
-            <div className="space-y-2">
-              <Label>I want to join as</Label>
-              <div className="grid grid-cols-3 gap-3">
-                {(['mentee', 'mentor', 'admin'] as const).map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role })}
-                    className={`p-3 rounded-xl border-2 transition-all capitalize ${
-                      formData.role === role
-                        ? 'border-primary bg-primary/10 text-primary font-medium'
-                        : 'border-border hover:border-primary/50 text-foreground'
-                    }`}
-                  >
-                    {role}
-                  </button>
-                ))}
-              </div>
+          {/* Password */}
+          <div>
+            <label className="block text-slate-700 text-sm mb-2">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className={`w-full pl-11 pr-4 py-3 border ${errors.password ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent`}
+                placeholder="••••••••"
+              />
             </div>
+            {errors.password && (
+              <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.password}
+              </p>
+            )}
+          </div>
 
-            {/* Submit Button */}
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? (
-                'Creating account...'
-              ) : (
-                <>
-                  Create Account
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </form>
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-slate-700 text-sm mb-2">Confirm Password</label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                className={`w-full pl-11 pr-4 py-3 border ${errors.confirmPassword ? 'border-red-300' : 'border-slate-200'} rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent`}
+                placeholder="••••••••"
+              />
+            </div>
+            {errors.confirmPassword && (
+              <p className="text-red-600 text-sm mt-1 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.confirmPassword}
+              </p>
+            )}
+          </div>
 
-          {/* Login Link */}
-          <div className="mt-6 text-center text-sm">
-            <span className="text-muted-foreground">Already have an account? </span>
-            <Link href="/login" className="text-primary hover:underline font-medium">
+          {/* Role Selection */}
+          <div>
+            <label className="block text-slate-700 text-sm mb-3">I want to join as</label>
+            <div className="grid grid-cols-3 gap-3">
+              {(['mentee', 'mentor', 'admin'] as const).map((role) => (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role })}
+                  className={`p-3 rounded-xl border-2 transition-all ${
+                    formData.role === role
+                      ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                  }`}
+                >
+                  <div className="capitalize">{role}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white py-3 rounded-xl transition-colors flex items-center justify-center gap-2 group"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Creating account...
+              </>
+            ) : (
+              <>
+                Create Account
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Login Link */}
+        <div className="mt-6 text-center">
+          <p className="text-slate-600 text-sm">
+            Already have an account?{' '}
+            <Link href="/login" className="text-indigo-600 hover:text-indigo-700">
               Sign in
             </Link>
-          </div>
-        </CardContent>
-      </Card>
+          </p>
+        </div>
+      </div>
 
       {/* Footer */}
-      <p className="text-center text-muted-foreground text-sm">
+      <p className="text-center text-slate-500 text-sm">
         By signing up, you agree to our Terms of Service and Privacy Policy
       </p>
     </div>
