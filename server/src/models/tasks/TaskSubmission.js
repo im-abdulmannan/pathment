@@ -12,7 +12,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     version: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      defaultValue: 1
     },
     submissionText: {
       type: DataTypes.TEXT,
@@ -21,7 +22,35 @@ module.exports = (sequelize, DataTypes) => {
     },
     submissionUrls: {
       type: DataTypes.ARRAY(DataTypes.TEXT),
-      field: 'submission_urls'
+      field: 'submission_urls',
+      defaultValue: []
+    },
+    status: {
+      type: DataTypes.STRING(20),
+      defaultValue: 'pending',
+      validate: {
+        isIn: [['pending', 'approved', 'revision_needed', 'reviewing']]
+      }
+    },
+    extensionRequested: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      field: 'extension_requested'
+    },
+    extensionReason: {
+      type: DataTypes.TEXT,
+      field: 'extension_reason'
+    },
+    extensionDays: {
+      type: DataTypes.INTEGER,
+      field: 'extension_days'
+    },
+    extensionStatus: {
+      type: DataTypes.STRING(20),
+      field: 'extension_status',
+      validate: {
+        isIn: [['pending', 'approved', 'rejected', null]]
+      }
     },
     submittedAt: {
       type: DataTypes.DATE,
@@ -38,7 +67,8 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false,
     indexes: [
       { unique: true, fields: ['assigned_task_id', 'version'] },
-      { fields: ['assigned_task_id'] }
+      { fields: ['assigned_task_id'] },
+      { fields: ['status'] }
     ]
   });
 

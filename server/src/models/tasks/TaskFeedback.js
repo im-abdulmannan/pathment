@@ -25,6 +25,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       field: 'feedback_text'
     },
+    inlineFeedback: {
+      type: DataTypes.JSONB,
+      field: 'inline_feedback',
+      comment: 'Array of {line, comment, type} for inline feedback'
+    },
     rating: {
       type: DataTypes.DECIMAL(3, 2),
       allowNull: false,
@@ -42,6 +47,14 @@ module.exports = (sequelize, DataTypes) => {
     criteriaMet: {
       type: DataTypes.JSONB,
       field: 'criteria_met'
+    },
+    feedbackType: {
+      type: DataTypes.STRING(20),
+      defaultValue: 'general',
+      field: 'feedback_type',
+      validate: {
+        isIn: [['general', 'inline', 'both']]
+      }
     }
   }, {
     tableName: 'task_feedback',

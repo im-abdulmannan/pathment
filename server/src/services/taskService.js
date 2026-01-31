@@ -108,6 +108,7 @@ class TaskService {
     const {
       menteeId,
       enrollmentId,
+      roadmapTaskId, // NEW: If provided, assign existing roadmap task
       title,
       description,
       type,
@@ -132,21 +133,31 @@ class TaskService {
       throw new ForbiddenError('You are not the mentor for this mentee');
     }
 
-    // Create custom roadmap task first
-    const roadmapTask = await models.RoadmapTask.create({
-      roadmapWeekId: null, // Custom tasks don't belong to a week
-      title,
-      description,
-      type: type || 'custom',
-      difficulty: difficulty || 'medium',
-      taskOrder: 0,
-      deliverable: deliverable || 'Complete the assigned task',
-      acceptanceCriteria: acceptanceCriteria || [],
-      estimatedHours: 5,
-      isMandatory: false,
-      isCustomTask: true,
-      pointsBase: pointsBase || 10
-    });
+    let roadmapTask;
+
+    // If roadmapTaskId provided, use existing roadmap task
+    if (roadmapTaskId) {
+      roadmapTask = await models.RoadmapTask.findByPk(roadmapTaskId);
+      if (!roadmapTask) {
+        throw new NotFoundError('Roadmap task not found');
+      }
+    } else {
+      // Create custom roadmap task
+      roadmapTask = await models.RoadmapTask.create({
+        roadmapWeekId: null, // Custom tasks don't belong to a week
+        title,
+        description,
+        type: type || 'custom',
+        difficulty: difficulty || 'medium',
+        taskOrder: 0,
+        deliverable: deliverable || 'Complete the assigned task',
+        acceptanceCriteria: acceptanceCriteria || [],
+        estimatedHours: 5,
+        isMandatory: false,
+        isCustomTask: true,
+        pointsBase: pointsBase || 10
+      });
+    }
 
     // Create assigned task
     const assignedTask = await models.AssignedTask.create({
@@ -156,7 +167,7 @@ class TaskService {
       enrollmentId,
       status: 'assigned',
       dueDate: dueDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      isCustomTask: true
+      isCustomTask: roadmapTaskId ? false : true // Roadmap tasks are not custom
     });
 
     await this.updateEnrollmentTaskStats(enrollmentId);

@@ -1,0 +1,418 @@
+const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinaryUpload');
+const { models } = require('../db');
+const { NotFoundError, ForbiddenError, ValidationError } = require('../utils/errors/errorTypes');
+
+class SubmissionService {
+  /**
+   * Submit task with files and rich text content
+   */
+  async submitTaskWithFiles(taskId, menteeId, submissionData, files = []) {
+    const task = await models.AssignedTask.findByPk(taskId);
+
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
+
+    if (task.menteeId !== menteeId) {
+      throw new ForbiddenError('This task is not assigned to you');
+    }
+
+    if (task.status === 'completed') {
+      throw new ValidationError('Task is already completed');
+    }
+
+    // Upload files to Cloudinary
+    const uploadedFiles = [];
+    for (const file of files) {
+      try {
+        const result = await uploadToCloudinary(
+          file.buffer,
+          `pathment/submissions/${taskId}`,
+          'auto'
+        );
+
+        uploadedFiles.push({
+          fileName: file.originalname,
+          fileUrl: result.secure_url,
+          fileType: file.mimetype,
+          fileSizeBytes: file.size,
+          cloudinaryPublicId: result.public_id
+        });
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        throw new ValidationError(`Failed to upload file: ${file.originalname}`);
+      }
+    }
+
+    // Get the current maximum version for this task
+    const existingSubmissions = await models.TaskSubmission.findAll({
+      where: { assignedTaskId: taskId },
+      attributes: ['version'],
+      order: [['version', 'DESC']],
+      limit: 1
+    });
+
+    const currentMaxVersion = existingSubmissions.length > 0 ? existingSubmissions[0].version : 0;
+    const newVersion = currentMaxVersion + 1;
+
+    // Create submission
+    const submission = await models.TaskSubmission.create({
+      assignedTaskId: taskId,
+      version: newVersion,
+      submissionText: submissionData.submissionText || '',
+      submissionUrls: submissionData.submissionUrls || [],
+      status: 'pending',
+      extensionRequested: submissionData.extensionRequested || false,
+      extensionReason: submissionData.extensionReason || null,
+      extensionDays: submissionData.extensionDays || null,
+      extensionStatus: submissionData.extensionRequested ? 'pending' : null
+    });
+
+    // Save file attachments
+    for (const fileData of uploadedFiles) {
+      await models.TaskSubmissionFile.create({
+        submissionId: submission.id,
+        ...fileData
+      });
+    }
+
+    // Update task status
+    await task.update({
+      status: 'submitted',
+      submittedAt: new Date(),
+      currentSubmissionVersion: newVersion,
+      startedAt: task.startedAt || new Date(),
+      isLate: task.dueDate && new Date() > new Date(task.dueDate)
+    });
+
+    // Return complete submission with files
+    return this.getSubmissionById(submission.id);
+  }
+
+  /**
+   * Request extension for a task
+   */
+  async requestExtension(taskId, menteeId, extensionData) {
+    const task = await models.AssignedTask.findByPk(taskId);
+
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
+
+    if (task.menteeId !== menteeId) {
+      throw new ForbiddenError('This task is not assigned to you');
+    }
+
+    if (task.status === 'completed') {
+      throw new ValidationError('Cannot request extension for completed task');
+    }
+
+    // Check if there's already a pending extension request
+    const latestSubmission = await models.TaskSubmission.findOne({
+      where: {
+        assignedTaskId: taskId
+      },
+      order: [['version', 'DESC']]
+    });
+
+    if (latestSubmission && latestSubmission.extensionStatus === 'pending') {
+      throw new ValidationError('Extension request already pending');
+    }
+
+    // Create a submission with extension request
+    const version = task.currentSubmissionVersion + 1;
+    const submission = await models.TaskSubmission.create({
+      assignedTaskId: taskId,
+      version,
+      submissionText: extensionData.reason || 'Extension request',
+      status: 'pending',
+      extensionRequested: true,
+      extensionReason: extensionData.reason,
+      extensionDays: extensionData.days,
+      extensionStatus: 'pending'
+    });
+
+    return this.getSubmissionById(submission.id);
+  }
+
+  /**
+   * Approve or reject extension request
+   */
+  async handleExtensionRequest(submissionId, mentorId, approved, newDueDate = null) {
+    const submission = await models.TaskSubmission.findByPk(submissionId, {
+      include: [{
+        model: models.AssignedTask,
+        as: 'assignedTask'
+      }]
+    });
+
+    if (!submission) {
+      throw new NotFoundError('Submission not found');
+    }
+
+    if (submission.assignedTask.mentorId !== mentorId) {
+      throw new ForbiddenError('You are not the mentor for this task');
+    }
+
+    if (!submission.extensionRequested) {
+      throw new ValidationError('This is not an extension request');
+    }
+
+    if (submission.extensionStatus !== 'pending') {
+      throw new ValidationError('Extension request already processed');
+    }
+
+    await submission.update({
+      extensionStatus: approved ? 'approved' : 'rejected',
+      reviewedAt: new Date()
+    });
+
+    if (approved && newDueDate) {
+      await submission.assignedTask.update({
+        dueDate: newDueDate
+      });
+    }
+
+    return this.getSubmissionById(submissionId);
+  }
+
+  /**
+   * Review task submission with detailed feedback
+   */
+  async reviewSubmission(submissionId, mentorId, reviewData) {
+    const submission = await models.TaskSubmission.findByPk(submissionId, {
+      include: [{
+        model: models.AssignedTask,
+        as: 'assignedTask'
+      }]
+    });
+
+    if (!submission) {
+      throw new NotFoundError('Submission not found');
+    }
+
+    const task = submission.assignedTask;
+
+    if (task.mentorId !== mentorId) {
+      throw new ForbiddenError('You are not the mentor for this task');
+    }
+
+    if (submission.status !== 'pending' && submission.status !== 'reviewing') {
+      throw new ValidationError('Submission cannot be reviewed in current status');
+    }
+
+    const {
+      rating,
+      feedbackText,
+      inlineFeedback,
+      isApproved,
+      revisionNotes,
+      criteriaMet,
+      pointsAwarded
+    } = reviewData;
+
+    // Validate rating
+    if (rating < 0 || rating > 5) {
+      throw new ValidationError('Rating must be between 0 and 5');
+    }
+
+    // Create feedback
+    const feedbackType = inlineFeedback && inlineFeedback.length > 0 ? 'both' : 'general';
+    
+    await models.TaskFeedback.create({
+      assignedTaskId: task.id,
+      submissionId: submission.id,
+      mentorId,
+      feedbackText,
+      inlineFeedback: inlineFeedback || null,
+      rating,
+      isApproved,
+      revisionNotes: isApproved ? null : revisionNotes,
+      criteriaMet: criteriaMet || null,
+      feedbackType
+    });
+
+    // Update submission status
+    await submission.update({
+      status: isApproved ? 'approved' : 'revision_needed',
+      reviewedAt: new Date()
+    });
+
+    // Update task
+    const updateData = {
+      status: isApproved ? 'completed' : 'revision_needed',
+      finalRating: rating
+    };
+
+    if (isApproved) {
+      updateData.completedAt = new Date();
+      updateData.pointsAwarded = pointsAwarded || 10;
+    } else {
+      updateData.revisionCount = task.revisionCount + 1;
+    }
+
+    await task.update(updateData);
+
+    // Update mentor stats
+    await this.updateMentorReviewStats(mentorId);
+
+    return this.getSubmissionById(submissionId);
+  }
+
+  /**
+   * Get submission by ID with all related data
+   */
+  async getSubmissionById(submissionId) {
+    const submission = await models.TaskSubmission.findByPk(submissionId, {
+      include: [
+        {
+          model: models.AssignedTask,
+          as: 'assignedTask',
+          include: [
+            {
+              model: models.RoadmapTask,
+              as: 'roadmapTask'
+            },
+            {
+              model: models.User,
+              as: 'mentee',
+              attributes: ['id', 'firstName', 'lastName', 'email']
+            },
+            {
+              model: models.User,
+              as: 'mentor',
+              attributes: ['id', 'firstName', 'lastName', 'email']
+            }
+          ]
+        },
+        {
+          model: models.TaskSubmissionFile,
+          as: 'files'
+        },
+        {
+          model: models.TaskFeedback,
+          as: 'feedback',
+          include: [{
+            model: models.User,
+            as: 'mentor',
+            attributes: ['id', 'firstName', 'lastName']
+          }]
+        }
+      ]
+    });
+
+    if (!submission) {
+      throw new NotFoundError('Submission not found');
+    }
+
+    return submission;
+  }
+
+  /**
+   * Get all submissions for a task
+   */
+  async getTaskSubmissions(taskId, userId, userRole) {
+    const task = await models.AssignedTask.findByPk(taskId);
+
+    if (!task) {
+      throw new NotFoundError('Task not found');
+    }
+
+    // Check permissions
+    if (userRole === 'mentee' && task.menteeId !== userId) {
+      throw new ForbiddenError('Not authorized');
+    }
+    if (userRole === 'mentor' && task.mentorId !== userId) {
+      throw new ForbiddenError('Not authorized');
+    }
+
+    const submissions = await models.TaskSubmission.findAll({
+      where: { assignedTaskId: taskId },
+      include: [
+        {
+          model: models.TaskSubmissionFile,
+          as: 'files'
+        },
+        {
+          model: models.TaskFeedback,
+          as: 'feedback',
+          include: [{
+            model: models.User,
+            as: 'mentor',
+            attributes: ['id', 'firstName', 'lastName']
+          }]
+        }
+      ],
+      order: [['version', 'DESC']]
+    });
+
+    return submissions;
+  }
+
+  /**
+   * Delete file from submission
+   */
+  async deleteSubmissionFile(fileId, userId, userRole) {
+    const file = await models.TaskSubmissionFile.findByPk(fileId, {
+      include: [{
+        model: models.TaskSubmission,
+        as: 'submission',
+        include: [{
+          model: models.AssignedTask,
+          as: 'assignedTask'
+        }]
+      }]
+    });
+
+    if (!file) {
+      throw new NotFoundError('File not found');
+    }
+
+    const task = file.submission.assignedTask;
+
+    // Only mentee can delete their own files before review
+    if (userRole === 'mentee' && task.menteeId !== userId) {
+      throw new ForbiddenError('Not authorized');
+    }
+
+    if (file.submission.status !== 'pending') {
+      throw new ValidationError('Cannot delete files from reviewed submissions');
+    }
+
+    // Delete from Cloudinary
+    try {
+      const publicId = file.fileUrl.split('/').slice(-2).join('/').split('.')[0];
+      await deleteFromCloudinary(`pathment/submissions/${task.id}/${publicId}`);
+    } catch (error) {
+      console.error('Error deleting from Cloudinary:', error);
+    }
+
+    await file.destroy();
+
+    return { message: 'File deleted successfully' };
+  }
+
+  /**
+   * Update mentor review statistics
+   */
+  async updateMentorReviewStats(mentorId) {
+    const mentor = await models.MentorProfile.findOne({
+      where: { userId: mentorId }
+    });
+
+    if (!mentor) return;
+
+    const reviewedTasks = await models.AssignedTask.count({
+      where: {
+        mentorId,
+        status: 'completed'
+      }
+    });
+
+    await mentor.update({
+      totalTasksReviewed: reviewedTasks
+    });
+  }
+}
+
+module.exports = new SubmissionService();

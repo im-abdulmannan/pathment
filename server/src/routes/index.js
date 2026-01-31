@@ -11,6 +11,7 @@ const matchingRoutes = require('./matching');
 const levelMentorRoutes = require('./levelMentors');
 const mentorRoutes = require('./mentors');
 const taskRoutes = require('./tasks');
+const submissionRoutes = require('./submissions');
 
 /**
  * API Routes
@@ -49,6 +50,9 @@ router.use('/mentors', mentorRoutes);
 
 // Task routes
 router.use('/tasks', taskRoutes);
+
+// Submission routes
+router.use('/submissions', submissionRoutes);
 
 // Level mentor assignment routes
 router.use('/', levelMentorRoutes);
