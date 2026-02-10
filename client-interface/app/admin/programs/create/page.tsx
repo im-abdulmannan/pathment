@@ -32,6 +32,8 @@ interface ProgramData {
   status: string;
   totalDurationWeeks: number;
   estimatedHoursPerWeek: number;
+  startDate: string;
+  endDate: string;
   maxEnrollments: number | '';
   tags: string[];
   learningOutcomes: string[];
@@ -107,6 +109,8 @@ export default function CreateProgramFlow() {
     status: 'draft',
     totalDurationWeeks: 12,
     estimatedHoursPerWeek: 10,
+    startDate: '',
+    endDate: '',
     maxEnrollments: '',
     tags: [],
     learningOutcomes: [],
@@ -695,6 +699,26 @@ function ProgramBasicInfo({ programData, setProgramData, tagInput, setTagInput, 
               max="40"
               value={programData.estimatedHoursPerWeek}
               onChange={(e) => setProgramData({ ...programData, estimatedHoursPerWeek: parseInt(e.target.value) })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Start Date</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={programData.startDate}
+              onChange={(e) => setProgramData({ ...programData, startDate: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="endDate">End Date</Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={programData.endDate}
+              onChange={(e) => setProgramData({ ...programData, endDate: e.target.value })}
             />
           </div>
 
