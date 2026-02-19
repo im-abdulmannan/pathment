@@ -48,6 +48,23 @@ export const validateMinLength = (value: string, minLength: number): boolean => 
   return value.length >= minLength;
 };
 
+/**
+ * Extracts and formats field-level validation errors from an API error response.
+ * Returns a bullet-point string if the response contains an `errors` array,
+ * otherwise falls back to the generic `message` field.
+ *
+ * @example
+ * // "• End date must be after start date\n• maxEnrollments must be a number"
+ * getValidationErrors(error)
+ */
+export const getValidationErrors = (error: any): string => {
+  const errors = error?.response?.data?.errors;
+  if (Array.isArray(errors) && errors.length > 0) {
+    return errors.map((e: { field: string; message: string }) => `\u2022 ${e.message}`).join('\n');
+  }
+  return error?.response?.data?.message || 'Something went wrong';
+};
+
 export const validateMaxLength = (value: string, maxLength: number): boolean => {
   return value.length <= maxLength;
 };

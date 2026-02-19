@@ -24,6 +24,7 @@ import {
 import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
 import programManagementApi from '@/lib/services/program-api';
+import { getValidationErrors } from '@/lib/utils/validation';
 
 interface ProgramData {
   name: string;
@@ -159,7 +160,14 @@ export default function CreateProgramFlow() {
         return;
       }
 
-      const response = await programManagementApi.programs.create(programData);
+      const payload = {
+        ...programData,
+        maxEnrollments: programData.maxEnrollments === '' ? null : programData.maxEnrollments,
+        startDate: programData.startDate || undefined,
+        endDate: programData.endDate || undefined,
+      };
+
+      const response = await programManagementApi.programs.create(payload);
       
       // API returns: { success: true, message: '...', data: { program: {...} } }
       const programId = response?.program?.id;
@@ -180,9 +188,10 @@ export default function CreateProgramFlow() {
 
       setCurrentStep(2);
     } catch (error: any) {
+      console.log("🚀 ~ handleCreateProgram ~ error:", error)
       toast({
-        title: 'Error',
-        description: error.response?.data?.message || 'Failed to create program',
+        title: error?.response?.data?.message || 'Failed to create program',
+        description: getValidationErrors(error),
         variant: 'destructive',
       });
     } finally {

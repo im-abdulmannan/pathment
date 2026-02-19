@@ -9,15 +9,20 @@ export interface ToastProps {
 
 export function useToast() {
   const toast = ({ title, description, variant, duration }: ToastProps) => {
+    const hasMultipleLines = description && description.includes('\n');
+    const effectiveDuration = duration || (hasMultipleLines ? 6000 : 4000);
+
     if (variant === "destructive") {
       sonnerToast.error(title || "Error", {
         description,
-        duration: duration || 4000,
+        duration: effectiveDuration,
+        style: { whiteSpace: 'pre-line' },
       });
     } else {
       sonnerToast.success(title || "Success", {
         description,
-        duration: duration || 4000,
+        duration: effectiveDuration,
+        style: { whiteSpace: 'pre-line' },
       });
     }
   };
