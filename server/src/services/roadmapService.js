@@ -647,7 +647,12 @@ class RoadmapService {
 
     const task = await models.RoadmapTask.create({
       weekId,
-      ...data
+      ...data,
+      // Map orderIndex → taskOrder (model field), auto-assign if missing
+      taskOrder: data.taskOrder || data.orderIndex ||
+        ((await models.RoadmapTask.count({ where: { roadmapWeekId: weekId } })) + 1),
+      // deliverable is NOT NULL in the model, provide default if omitted
+      deliverable: data.deliverable || 'Complete the assigned task',
     });
 
     // Add resources if provided

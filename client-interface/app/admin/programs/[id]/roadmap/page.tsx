@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Sparkles,
   Plus,
+  X,
   Edit2,
   Trash2,
   Save,
@@ -33,6 +34,22 @@ export default function RoadmapGenerator() {
   const [levels, setLevels] = useState<any[]>([]);
   const [selectedLevelId, setSelectedLevelId] = useState<string>(levelParam || '');
   const [editingWeek, setEditingWeek] = useState<number | null>(null);
+  const [taskModal, setTaskModal] = useState<{
+    mode: 'add' | 'edit';
+    weekId: string;
+    weekNumber: number;
+    task?: any;
+  } | null>(null);
+  const [taskForm, setTaskForm] = useState({
+    title: '',
+    description: '',
+    deliverable: '',
+    taskOrder: 1,
+    type: 'exercise',
+    difficulty: 'medium',
+    weekId: '',
+  });
+  const [savingTask, setSavingTask] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -82,6 +99,10 @@ export default function RoadmapGenerator() {
             id: task.id,
             title: task.title,
             description: task.description,
+            deliverable: task.deliverable || '',
+            taskOrder: task.taskOrder || 1,
+            type: task.type || 'exercise',
+            difficulty: task.difficulty || 'medium',
             resources: task.resources || []
           }))
         }));
@@ -139,6 +160,10 @@ export default function RoadmapGenerator() {
             id: task.id,
             title: task.title,
             description: task.description,
+            deliverable: task.deliverable || '',
+            taskOrder: task.taskOrder || 1,
+            type: task.type || 'exercise',
+            difficulty: task.difficulty || 'medium',
             resources: task.resources || []
           }))
         }));
@@ -180,26 +205,56 @@ export default function RoadmapGenerator() {
     }
   };
 
-  const addTask = async (weekIndex: number) => {
-    const week = roadmap[weekIndex];
-    if (!week?.id) {
-      toast.error('Week not found');
+  const openAddTask = (weekId: string, weekNumber: number, taskCount: number) => {
+    setTaskForm({ title: '', description: '', deliverable: '', taskOrder: taskCount + 1, type: 'exercise', difficulty: 'medium', weekId });
+    setTaskModal({ mode: 'add', weekId, weekNumber });
+  };
+
+  const openEditTask = (task: any, weekId: string, weekNumber: number) => {
+    setTaskForm({
+      title: task.title,
+      description: task.description,
+      deliverable: task.deliverable || '',
+      taskOrder: task.taskOrder || 1,
+      type: task.type || 'exercise',
+      difficulty: task.difficulty || 'medium',
+      weekId,
+    });
+    setTaskModal({ mode: 'edit', weekId, weekNumber, task });
+  };
+
+  const handleSaveTask = async () => {
+    if (!taskForm.title.trim() || !taskForm.description.trim() || !taskForm.deliverable.trim()) {
+      toast.error('Title, description and deliverable are required');
       return;
     }
-
+    setSavingTask(true);
     try {
-      const newTaskData = {
-        title: 'New Task',
-        description: 'Click edit to add description',
-        resources: []
+      const payload = {
+        title: taskForm.title.trim(),
+        description: taskForm.description.trim(),
+        deliverable: taskForm.deliverable.trim(),
+        taskOrder: taskForm.taskOrder,
+        type: taskForm.type,
+        difficulty: taskForm.difficulty,
       };
-      
-      await programManagementApi.roadmaps.addTask(week.id, newTaskData);
-      toast.success('Task added successfully');
-      await fetchRoadmap(); // Refresh to get updated data
+      if (taskModal?.mode === 'add') {
+        await programManagementApi.roadmaps.addTask(taskForm.weekId, payload);
+        toast.success('Task added successfully');
+      } else if (taskModal?.mode === 'edit' && taskModal.task) {
+        const updatePayload: any = { ...payload };
+        if (taskForm.weekId !== taskModal.weekId) {
+          updatePayload.roadmapWeekId = taskForm.weekId;
+        }
+        await programManagementApi.roadmaps.updateTask(taskModal.task.id, updatePayload);
+        toast.success('Task updated successfully');
+      }
+      setTaskModal(null);
+      await fetchRoadmap();
     } catch (error: any) {
-      console.error('Failed to add task:', error);
-      toast.error(error.response?.data?.message || 'Failed to add task');
+      toast.error(error.response?.data?.message || 'Failed to save task');
+    } finally {
+      setSavingTask(false);
     }
   };
 
@@ -491,11 +546,9 @@ export default function RoadmapGenerator() {
                     </div>
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => {
-                          // TODO: Implement task editing modal
-                          toast.info('Task editing modal coming soon');
-                        }}
+                        onClick={() => openEditTask(task, week.id, week.week)}
                         className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                        title="Edit task"
                       >
                         <Edit2 className="w-4 h-4 text-slate-600" />
                       </button>
@@ -512,7 +565,7 @@ export default function RoadmapGenerator() {
 
               {/* Add Task Button */}
               <button
-                onClick={() => addTask(weekIndex)}
+                onClick={() => openAddTask(week.id, week.week, week.tasks.length)}
                 className="w-full p-4 border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 rounded-xl transition-colors flex items-center justify-center gap-2 text-slate-600 hover:text-indigo-700"
               >
                 <Plus className="w-5 h-5" />
@@ -530,6 +583,148 @@ export default function RoadmapGenerator() {
           <Plus className="w-5 h-5" />
           Add Week
         </button>
+        </div>
+      )}
+
+      {/* Task Form Modal */}
+      {taskModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-200">
+              <h2 className="text-slate-900 font-semibold text-lg">
+                {taskModal.mode === 'add' ? `Add Task – Week ${taskModal.weekNumber}` : 'Edit Task'}
+              </h2>
+              <button onClick={() => setTaskModal(null)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5">
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={taskForm.title}
+                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                  placeholder="e.g., Build a React component"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={taskForm.description}
+                  onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                  placeholder="Describe what the mentee needs to do (min 10 characters)..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
+                />
+              </div>
+
+              {/* Deliverable */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Deliverable <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={taskForm.deliverable}
+                  onChange={(e) => setTaskForm({ ...taskForm, deliverable: e.target.value })}
+                  placeholder="What should the mentee submit? e.g., GitHub repo link, screenshot, written report..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm resize-none"
+                />
+              </div>
+
+              {/* Week & Task Order */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Week</label>
+                  <select
+                    value={taskForm.weekId}
+                    onChange={(e) => setTaskForm({ ...taskForm, weekId: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+                  >
+                    {roadmap.map((w: any) => (
+                      <option key={w.id} value={w.id}>Week {w.week}: {w.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Task Order</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={taskForm.taskOrder}
+                    onChange={(e) => setTaskForm({ ...taskForm, taskOrder: parseInt(e.target.value) || 1 })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Type & Difficulty */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Type</label>
+                  <select
+                    value={taskForm.type}
+                    onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+                  >
+                    <option value="reading">Reading</option>
+                    <option value="video">Video</option>
+                    <option value="exercise">Exercise</option>
+                    <option value="project">Project</option>
+                    <option value="quiz">Quiz</option>
+                    <option value="practical">Practical</option>
+                    <option value="assessment">Assessment</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Difficulty</label>
+                  <select
+                    value={taskForm.difficulty}
+                    onChange={(e) => setTaskForm({ ...taskForm, difficulty: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm bg-white"
+                  >
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                    <option value="expert">Expert</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end gap-3 p-6 border-t border-slate-200">
+              <button
+                onClick={() => setTaskModal(null)}
+                className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveTask}
+                disabled={savingTask}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-lg text-sm transition-colors flex items-center gap-2"
+              >
+                {savingTask ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                ) : (
+                  <><Save className="w-4 h-4" /> {taskModal.mode === 'add' ? 'Add Task' : 'Save Changes'}</>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
