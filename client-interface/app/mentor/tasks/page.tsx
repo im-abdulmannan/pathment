@@ -116,6 +116,10 @@ export default function MentorTasks() {
 
       toast.success('Roadmap task assigned successfully!');
       setAssigningTask(null);
+      // Re-fetch roadmap so assignmentStatus updates immediately (no refresh needed)
+      if (selectedProgram && selectedLevel) {
+        fetchRoadmap(selectedProgram, selectedLevel, selectedMenteeForAssign);
+      }
       fetchData();
     } catch (error: any) {
       console.error('Failed to assign task:', error);
