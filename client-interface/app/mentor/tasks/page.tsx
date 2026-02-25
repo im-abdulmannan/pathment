@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Filter, ClipboardList, Clock, CheckCircle2, AlertCircle, Plus, Loader2, FileText, Star, XCircle, Trash2, AlertTriangle, BookOpen } from 'lucide-react';
+import { Search, Filter, ClipboardList, Clock, CheckCircle2, AlertCircle, Plus, Loader2, FileText, Star, XCircle, Trash2, AlertTriangle, BookOpen, CalendarClock } from 'lucide-react';
 import { taskApi } from '@/lib/services/task-api';
 import { matchingApi } from '@/lib/services/enrollment-api';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 export default function MentorTasks() {
   const { user } = useAuth();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'pending' | 'all' | 'roadmap' | 'create'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'extensions' | 'all' | 'roadmap' | 'create'>('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [pendingTasks, setPendingTasks] = useState<any[]>([]);
@@ -313,6 +313,10 @@ export default function MentorTasks() {
     );
   };
 
+  const extensionTasks = allTasks.filter((task) =>
+    task.submissions?.some((s: any) => s.extensionRequested && s.extensionStatus === 'pending')
+  );
+
   const filteredAllTasks = allTasks.filter(task => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
@@ -382,6 +386,24 @@ export default function MentorTasks() {
                 {pendingTasks.length > 0 && (
                   <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs">
                     {pendingTasks.length}
+                  </span>
+                )}
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('extensions')}
+              className={`py-4 px-2 border-b-2 transition-colors ${
+                activeTab === 'extensions'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <CalendarClock className="w-5 h-5" />
+                Extensions
+                {extensionTasks.length > 0 && (
+                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
+                    {extensionTasks.length}
                   </span>
                 )}
               </div>
@@ -558,6 +580,83 @@ export default function MentorTasks() {
             </div>
           )}
 
+          {/* Extensions Tab */}
+          {!loading && activeTab === 'extensions' && (
+            <div>
+              {extensionTasks.length === 0 ? (
+                <div className="text-center py-12">
+                  <CalendarClock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-600 mb-2">No pending extension requests</p>
+                  <p className="text-slate-500 text-sm">Extension requests from your mentees will appear here.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {extensionTasks.map((task) => {
+                    const ext = task.submissions?.find((s: any) => s.extensionRequested && s.extensionStatus === 'pending');
+                    const currentDue = task.dueDate ? new Date(task.dueDate) : null;
+                    const newDue = currentDue && ext?.extensionDays
+                      ? new Date(currentDue.getTime() + ext.extensionDays * 86400000)
+                      : null;
+                    return (
+                      <div key={task.id} className="p-6 bg-orange-50 rounded-xl border-2 border-orange-200">
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h3 className="text-slate-900">{task.roadmapTask?.title}</h3>
+                              {getTaskSourceBadge(task.isCustomTask)}
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-slate-600">
+                              <span className="font-medium text-slate-800">
+                                {task.mentee?.firstName} {task.mentee?.lastName}
+                              </span>
+                              <span>•</span>
+                              <span>{task.enrollment?.program?.name}</span>
+                            </div>
+                          </div>
+                          <span className="px-3 py-1 bg-orange-100 text-orange-700 border border-orange-300 rounded-lg text-sm font-medium flex items-center gap-1.5 whitespace-nowrap">
+                            <CalendarClock className="w-4 h-4" />
+                            Extension Pending
+                          </span>
+                        </div>
+
+                        {/* Extension details */}
+                        <div className="grid sm:grid-cols-3 gap-4 mb-4 p-4 bg-white rounded-xl border border-orange-100">
+                          <div>
+                            <p className="text-xs text-slate-500 mb-1">Days Requested</p>
+                            <p className="text-sm font-medium text-slate-900">{ext?.extensionDays} day{ext?.extensionDays !== 1 ? 's' : ''}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500 mb-1">Current Due Date</p>
+                            <p className="text-sm font-medium text-slate-900">
+                              {currentDue ? currentDue.toLocaleDateString() : '—'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-slate-500 mb-1">New Due Date if Approved</p>
+                            <p className="text-sm font-medium text-green-700">
+                              {newDue ? newDue.toLocaleDateString() : '—'}
+                            </p>
+                          </div>
+                          <div className="sm:col-span-3">
+                            <p className="text-xs text-slate-500 mb-1">Reason</p>
+                            <p className="text-sm text-slate-800">{ext?.extensionReason || '—'}</p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => router.push(`/mentor/tasks/${task.id}`)}
+                          className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-sm font-medium transition-colors"
+                        >
+                          Review &amp; Respond
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* All Tasks Tab */}
           {!loading && activeTab === 'all' && (
             <div>
@@ -584,15 +683,25 @@ export default function MentorTasks() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {filteredAllTasks.map((task) => (
-                    <div key={task.id} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-indigo-200 transition-colors">
+                  {filteredAllTasks.map((task) => {
+                    const pendingExtension = task.submissions?.find((s: any) => s.extensionRequested && s.extensionStatus === 'pending');
+                    return (
+                    <div key={task.id} className={`p-4 bg-white rounded-xl border transition-colors ${
+                      pendingExtension ? 'border-orange-300 bg-orange-50/30 hover:border-orange-400' : 'border-slate-200 hover:border-indigo-200'
+                    }`}>
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h4 className="text-slate-900">{task.roadmapTask?.title}</h4>
                             {getTaskSourceBadge(task.isCustomTask)}
+                            {pendingExtension && (
+                              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-200 rounded text-xs font-medium flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Extension Pending
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-3 text-sm text-slate-600">
+                          <div className="flex items-center gap-3 text-sm text-slate-600 flex-wrap">
                             <span>{task.mentee?.firstName} {task.mentee?.lastName}</span>
                             <span>•</span>
                             <span>{task.enrollment?.currentLevel?.name}</span>
@@ -608,10 +717,22 @@ export default function MentorTasks() {
                               </>
                             )}
                           </div>
+                          {pendingExtension && (
+                            <p className="text-xs text-orange-700 mt-1">
+                              Requesting <strong>{pendingExtension.extensionDays} day{pendingExtension.extensionDays !== 1 ? 's' : ''}</strong>: &quot;{pendingExtension.extensionReason}&quot;
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           {getStatusBadge(task.status)}
-                          {(task.status === 'submitted' || task.status === 'revision_needed') ? (
+                          {pendingExtension ? (
+                            <button
+                              onClick={() => router.push(`/mentor/tasks/${task.id}`)}
+                              className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
+                            >
+                              Handle Extension
+                            </button>
+                          ) : (task.status === 'submitted' || task.status === 'revision_needed') ? (
                             <button
                               onClick={() => router.push(`/mentor/tasks/${task.id}/feedback`)}
                               className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors"
@@ -677,7 +798,8 @@ export default function MentorTasks() {
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </div>

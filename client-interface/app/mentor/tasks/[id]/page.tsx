@@ -23,6 +23,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { taskApi } from '@/lib/services/task-api';
+import { submissionService } from '@/lib/services/submissionService';
 import { toast } from 'sonner';
 
 interface PageProps {
@@ -38,6 +39,9 @@ export default function MentorTaskDetailsPage({ params }: PageProps) {
   const [cancellingTask, setCancellingTask] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
+  const [extensionDecision, setExtensionDecision] = useState<'approve' | 'reject' | null>(null);
+  const [newDueDate, setNewDueDate] = useState('');
+  const [isHandlingExtension, setIsHandlingExtension] = useState(false);
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -53,6 +57,23 @@ export default function MentorTaskDetailsPage({ params }: PageProps) {
     };
     fetchTask();
   }, [resolvedParams.id]);
+
+  const handleExtension = async (approved: boolean, submissionId: string) => {
+    setIsHandlingExtension(true);
+    try {
+      await submissionService.handleExtension(submissionId, approved, approved && newDueDate ? newDueDate : undefined);
+      toast.success(approved ? 'Extension approved! Due date updated.' : 'Extension request rejected.');
+      setExtensionDecision(null);
+      setNewDueDate('');
+      const response = await taskApi.getTaskById(resolvedParams.id);
+      setTask(response.data.task);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e.response?.data?.message || 'Failed to handle extension request');
+    } finally {
+      setIsHandlingExtension(false);
+    }
+  };
 
   const handleCancelTask = async () => {
     if (!cancelReason.trim()) {
@@ -415,6 +436,128 @@ export default function MentorTaskDetailsPage({ params }: PageProps) {
           ))}
         </div>
       )}
+
+      {/* ── Extension Request ── */}
+      {(() => {
+        const pendingExtension = task.submissions?.find(
+          (s: any) => s.extensionRequested && s.extensionStatus === 'pending'
+        );
+        if (!pendingExtension) return null;
+        return (
+          <div className="bg-orange-50 border-2 border-orange-300 rounded-2xl p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <Clock className="w-6 h-6 text-orange-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold text-orange-900 mb-1">Extension Request Pending</h2>
+                <div className="grid sm:grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-orange-700 font-medium">Days Requested</p>
+                    <p className="text-orange-900">{pendingExtension.extensionDays} day{pendingExtension.extensionDays !== 1 ? 's' : ''}</p>
+                  </div>
+                  <div>
+                    <p className="text-orange-700 font-medium">Reason</p>
+                    <p className="text-orange-900">{pendingExtension.extensionReason || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-orange-700 font-medium">Current Due Date</p>
+                    <p className="text-orange-900">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '—'}</p>
+                  </div>
+                  {task.dueDate && pendingExtension.extensionDays && (
+                    <div>
+                      <p className="text-orange-700 font-medium">New Due Date if Approved</p>
+                      <p className="text-orange-900">
+                        {new Date(
+                          new Date(task.dueDate).getTime() + pendingExtension.extensionDays * 86400000
+                        ).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Decision UI */}
+            {extensionDecision === null && (
+              <div className="flex gap-3 pt-2 border-t border-orange-200">
+                <button
+                  onClick={() => setExtensionDecision('approve')}
+                  className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  Approve Extension
+                </button>
+                <button
+                  onClick={() => setExtensionDecision('reject')}
+                  className="px-5 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-sm font-medium transition-colors flex items-center gap-2"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Reject Extension
+                </button>
+              </div>
+            )}
+
+            {extensionDecision === 'approve' && (
+              <div className="pt-2 border-t border-orange-200 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-orange-800 mb-1">
+                    Override new due date <span className="text-orange-500 font-normal">(optional — leave blank to use +{pendingExtension.extensionDays} days)</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={newDueDate}
+                    onChange={(e) => setNewDueDate(e.target.value)}
+                    className="px-3 py-2 border border-orange-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleExtension(true, pendingExtension.id)}
+                    disabled={isHandlingExtension}
+                    className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isHandlingExtension ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Approving...</>
+                    ) : (
+                      <><CheckCircle2 className="w-4 h-4" /> Confirm Approve</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setExtensionDecision(null)}
+                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm hover:bg-white transition-colors"
+                  >
+                    Back
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {extensionDecision === 'reject' && (
+              <div className="pt-2 border-t border-orange-200 space-y-3">
+                <p className="text-sm text-orange-800">Are you sure you want to reject this extension request? The mentee will keep the original due date.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleExtension(false, pendingExtension.id)}
+                    disabled={isHandlingExtension}
+                    className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isHandlingExtension ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Rejecting...</>
+                    ) : (
+                      <><XCircle className="w-4 h-4" /> Confirm Reject</>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setExtensionDecision(null)}
+                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-sm hover:bg-white transition-colors"
+                  >
+                    Back
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Actions */}
       <div className="flex items-center justify-between gap-4">
