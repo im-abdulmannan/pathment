@@ -49,6 +49,22 @@ exports.getMatches = catchAsync(async (req, res) => {
 });
 
 /**
+ * Auto-match all pending enrollments using AI suggestions
+ * POST /api/matches/auto-match
+ */
+exports.autoMatchPending = catchAsync(async (req, res) => {
+  const { programId } = req.body;
+  const matchedBy = req.user.id;
+
+  const { results, summary } = await matchingService.autoMatchPending(programId || null, matchedBy);
+
+  res.status(200).json(successResponse(
+    `Auto-match complete: ${summary.matched} matched, ${summary.skipped} skipped, ${summary.failed} failed`,
+    { results, summary }
+  ));
+});
+
+/**
  * Update match status
  * PATCH /api/matches/:id/status
  */

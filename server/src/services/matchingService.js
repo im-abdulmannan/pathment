@@ -459,6 +459,82 @@ class MatchingService {
   }
 
   /**
+   * Auto-match all pending enrollments using AI suggestions.
+   * Takes the top-scored mentor for each pending_match enrollment.
+   *
+   * @param {string|null} programId  – optionally scope to a single program
+   * @param {string}      matchedBy  – admin user id performing the action
+   * @returns {{ matched, skipped, failed, summary }}
+   */
+  async autoMatchPending(programId, matchedBy) {
+    const whereClause = { status: 'pending_match' };
+    if (programId) whereClause.programId = programId;
+
+    const enrollments = await models.Enrollment.findAll({
+      where: whereClause,
+      include: [
+        { model: models.ProgramLevel, as: 'currentLevel' },
+        {
+          model: models.User,
+          as: 'mentee',
+          include: [{ model: models.MenteeProfile, as: 'menteeProfile' }]
+        }
+      ]
+    });
+
+    const results = { matched: [], skipped: [], failed: [] };
+
+    for (const enrollment of enrollments) {
+      const menteeName = `${enrollment.mentee?.firstName} ${enrollment.mentee?.lastName}`.trim();
+
+      try {
+        const suggestions = await this.getAISuggestions(enrollment.id);
+
+        if (!suggestions || suggestions.length === 0) {
+          results.skipped.push({
+            enrollmentId: enrollment.id,
+            menteeName,
+            reason: 'No mentor suggestions available for this level'
+          });
+          continue;
+        }
+
+        const top = suggestions[0];
+        const match = await this.createMatch(
+          enrollment.id,
+          top.mentor.id,
+          enrollment.currentLevelId,
+          matchedBy
+        );
+
+        results.matched.push({
+          enrollmentId: enrollment.id,
+          menteeName,
+          mentorName: `${top.mentor.firstName} ${top.mentor.lastName}`.trim(),
+          matchScore: top.matchScore,
+          matchId: match.id
+        });
+      } catch (err) {
+        results.failed.push({
+          enrollmentId: enrollment.id,
+          menteeName,
+          reason: err.message
+        });
+      }
+    }
+
+    return {
+      results,
+      summary: {
+        total: enrollments.length,
+        matched: results.matched.length,
+        skipped: results.skipped.length,
+        failed: results.failed.length
+      }
+    };
+  }
+
+  /**
    * Find best mentor matches for a mentee
    * Used by AI matching system
    */
