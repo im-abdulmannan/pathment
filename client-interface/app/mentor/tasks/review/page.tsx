@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import {
-  Search,
-  Filter,
   Clock,
   Calendar,
   User,
@@ -13,6 +11,7 @@ import {
   MessageSquare,
   AlertCircle
 } from 'lucide-react';
+import { PageHeader, StatsCard, SearchAndFilterBar } from '@/components/admin/ui';
 
 export default function ReviewQueue() {
   const [filterStatus, setFilterStatus] = useState('all');
@@ -69,12 +68,6 @@ export default function ReviewQueue() {
     }
   ];
 
-  const stats = [
-    { label: 'Pending Reviews', value: submissions.length, color: 'yellow' },
-    { label: 'High Priority', value: submissions.filter(s => s.priority === 'high').length, color: 'red' },
-    { label: 'Avg. Review Time', value: '18h', color: 'blue' },
-  ];
-
   const getUrgencyColor = (hoursAgo: number) => {
     if (hoursAgo > 48) return 'text-red-600 bg-red-50 border-red-200';
     if (hoursAgo > 24) return 'text-orange-600 bg-orange-50 border-orange-200';
@@ -84,50 +77,36 @@ export default function ReviewQueue() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-slate-900 mb-2">Review Queue</h1>
-        <p className="text-slate-600">Review and provide feedback on mentee submissions</p>
-      </div>
+      <PageHeader
+        title="Review Queue"
+        subtitle="Review and provide feedback on mentee submissions"
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-2xl p-6 border border-slate-200">
-            <div className="text-slate-600 text-sm mb-2">{stat.label}</div>
-            <div className="text-slate-900 text-3xl">{stat.value}</div>
-          </div>
-        ))}
+        <StatsCard icon={Clock}        label="Pending Reviews"  value={submissions.length}                                                      colorClass="text-yellow-600 bg-yellow-100" />
+        <StatsCard icon={AlertCircle}  label="High Priority"    value={submissions.filter(s => s.priority === 'high').length}                  colorClass="text-red-600 bg-red-100" />
+        <StatsCard icon={Clock}        label="Avg. Review Time" value="18h"                                                                     colorClass="text-blue-600 bg-blue-100" />
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search submissions..."
-              className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
-
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none"
-            >
-              <option value="all">All Submissions</option>
-              <option value="high">High Priority</option>
-              <option value="medium">Medium Priority</option>
-              <option value="low">Low Priority</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      <SearchAndFilterBar
+        search={searchTerm}
+        onSearch={setSearchTerm}
+        placeholder="Search submissions..."
+        filters={[
+          {
+            value: filterStatus,
+            onChange: setFilterStatus,
+            options: [
+              { value: 'all', label: 'All Submissions' },
+              { value: 'high', label: 'High Priority' },
+              { value: 'medium', label: 'Medium Priority' },
+              { value: 'low', label: 'Low Priority' },
+            ],
+          },
+        ]}
+      />
 
       {/* Submissions List */}
       <div className="space-y-4">

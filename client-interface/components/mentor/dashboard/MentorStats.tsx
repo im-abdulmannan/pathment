@@ -1,42 +1,14 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckSquare, Clock, AlertCircle } from 'lucide-react';
-
-interface StatsCardProps {
-  title: string;
-  value: string;
-  icon: React.ElementType;
-  change: string;
-}
-
-function StatsCard({ title, value, icon: Icon, change }: StatsCardProps) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground mt-1">{change}</p>
-      </CardContent>
-    </Card>
-  );
-}
+import { StatsCard } from '@/components/admin/ui';
 
 export function MentorStats() {
-  const stats = [
-    { title: 'Active Mentees', value: '8', icon: CheckSquare, change: '2 new this week' },
-    { title: 'Pending Reviews', value: '5', icon: Clock, change: '3 high priority' },
-    { title: 'Tasks Assigned', value: '24', icon: AlertCircle, change: 'This month' },
-  ];
-
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      {stats.map((stat) => (
-        <StatsCard key={stat.title} {...stat} />
-      ))}
+      <StatsCard icon={CheckSquare} label="Active Mentees"    value="8"  sub="2 new this week"  colorClass="text-indigo-600 bg-indigo-50" />
+      <StatsCard icon={Clock}       label="Pending Reviews"   value="5"  sub="3 high priority" colorClass="text-yellow-600 bg-yellow-50" />
+      <StatsCard icon={AlertCircle} label="Tasks Assigned"    value="24" sub="This month"       colorClass="text-blue-600 bg-blue-50" />
     </div>
   );
 }

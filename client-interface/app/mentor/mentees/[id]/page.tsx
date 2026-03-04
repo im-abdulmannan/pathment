@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { 
-  ArrowLeft, 
   BookOpen, 
   Calendar, 
   CheckCircle2, 
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMenteeDetailPage } from '@/lib/hooks/mentor';
+import { PageHeader, StatsCard, ProgressBar, StatusBadge } from '@/components/admin/ui';
 
 export default function MenteeDetail() {
   const params = useParams();
@@ -73,13 +73,10 @@ export default function MenteeDetail() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <Link
-          href="/mentor/mentees"
-          className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Back to Mentees
-        </Link>
+        <PageHeader
+          backHref="/mentor/mentees"
+          backLabel="Back to Mentees"
+        />
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             <div className="w-20 h-20 bg-indigo-200 rounded-full flex items-center justify-center">
@@ -95,9 +92,7 @@ export default function MenteeDetail() {
                 <Mail className="w-4 h-4" />
                 {mentee?.email}
               </div>
-              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm">
-                Active Mentee
-              </span>
+              <StatusBadge status="active" />
             </div>
           </div>
 
@@ -249,49 +244,15 @@ export default function MenteeDetail() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-indigo-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Progress</div>
-          <div className="text-slate-900 text-2xl">{progress}%</div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-blue-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Current Week</div>
-          <div className="text-slate-900 text-2xl">{enrollment?.currentWeek || 1}</div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Tasks Done</div>
-          <div className="text-slate-900 text-2xl">{enrollment?.tasksCompleted ?? 0}</div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
-              <Star className="w-5 h-5 text-yellow-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Avg Rating</div>
-          <div className="text-slate-900 text-2xl">
-            {enrollment?.avgTaskRating && parseFloat(enrollment.avgTaskRating) > 0
-              ? parseFloat(enrollment.avgTaskRating).toFixed(1)
-              : '-'}
-          </div>
-        </div>
+        <StatsCard icon={TrendingUp}  label="Progress"      value={`${progress}%`}                                                                                                colorClass="text-indigo-600 bg-indigo-100" />
+        <StatsCard icon={Calendar}    label="Current Week"  value={enrollment?.currentWeek || 1}                                                                                  colorClass="text-blue-600 bg-blue-100" />
+        <StatsCard icon={CheckCircle2} label="Tasks Done"   value={enrollment?.tasksCompleted ?? 0}                                                                               colorClass="text-green-600 bg-green-100" />
+        <StatsCard
+          icon={Star}
+          label="Avg Rating"
+          value={enrollment?.avgTaskRating && parseFloat(enrollment.avgTaskRating) > 0 ? parseFloat(enrollment.avgTaskRating).toFixed(1) : '-'}
+          colorClass="text-yellow-600 bg-yellow-100"
+        />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -317,15 +278,7 @@ export default function MenteeDetail() {
               </div>
               <div>
                 <div className="text-sm text-slate-600 mb-2">Overall Progress</div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-600 rounded-full transition-all"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <span className="text-slate-900">{progress}%</span>
-                </div>
+                <ProgressBar value={progress} size="md" />
               </div>
             </div>
           </div>

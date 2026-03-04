@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, AlertCircle, FileText } from 'lucide-react';
 
 export type EnrollmentStatus =
   | 'active' | 'matched' | 'pending_approval' | 'approved'
@@ -7,6 +7,11 @@ export type EnrollmentStatus =
   | 'program_completed' | 'rejected' | 'dropped';
 
 export type ProgramStatus = 'published' | 'active' | 'draft' | 'completed' | 'archived';
+
+export type TaskStatus =
+  | 'assigned' | 'in_progress' | 'submitted' | 'revision_needed' | 'completed' | 'cancelled';
+
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected' | 'revision_requested';
 
 type AnyStatus = string;
 
@@ -37,6 +42,15 @@ const DEFAULT_CONFIG: Record<string, BadgeConfig> = {
   draft:               { label: 'Draft',               className: 'bg-amber-100 text-amber-700' },
   completed:           { label: 'Completed',           className: 'bg-indigo-100 text-indigo-700' },
   archived:            { label: 'Archived',            className: 'bg-slate-100 text-slate-600' },
+  // Task
+  assigned:            { label: 'Assigned',            className: 'bg-blue-100 text-blue-700',     icon: <AlertCircle className="w-3 h-3" /> },
+  in_progress:         { label: 'In Progress',         className: 'bg-yellow-100 text-yellow-700', icon: <Clock className="w-3 h-3" /> },
+  submitted:           { label: 'Submitted',           className: 'bg-purple-100 text-purple-700', icon: <FileText className="w-3 h-3" /> },
+  revision_needed:     { label: 'Needs Revision',      className: 'bg-orange-100 text-orange-700', icon: <AlertCircle className="w-3 h-3" /> },
+  cancelled:           { label: 'Cancelled',           className: 'bg-red-100 text-red-700',       icon: <XCircle className="w-3 h-3" /> },
+  // Submission
+  pending:             { label: 'Pending Review',      className: 'bg-yellow-100 text-yellow-700', icon: <Clock className="w-3 h-3" /> },
+  revision_requested:  { label: 'Revision Requested',  className: 'bg-orange-100 text-orange-700', icon: <AlertCircle className="w-3 h-3" /> },
 };
 
 interface StatusBadgeProps {

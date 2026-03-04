@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   Plus,
   BookOpen,
   User,
@@ -13,6 +12,7 @@ import {
   X,
   Send
 } from 'lucide-react';
+import { PageHeader } from '@/components/admin/ui';
 
 export default function TaskAssignment() {
   const router = useRouter();
@@ -86,18 +86,12 @@ export default function TaskAssignment() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <button
-        onClick={() => router.push('/mentor/dashboard')}
-        className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        Back to Dashboard
-      </button>
-
-      <div>
-        <h1 className="text-slate-900 mb-2">Assign Task</h1>
-        <p className="text-slate-600">Assign tasks from the roadmap or create custom assignments</p>
-      </div>
+      <PageHeader
+        title="Assign Task"
+        subtitle="Assign tasks from the roadmap or create custom assignments"
+        backHref="/mentor/dashboard"
+        backLabel="Back to Dashboard"
+      />
 
       <form onSubmit={handleSubmit}>
         {/* Select Mentee */}

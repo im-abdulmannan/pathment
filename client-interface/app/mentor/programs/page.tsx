@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { BookOpen, Users, ChevronRight, Loader2, TrendingUp } from 'lucide-react';
 import { useMentorPrograms } from '@/lib/hooks/mentor';
+import { StatusBadge } from '@/components/admin/ui';
 
 export default function MentorProgramsPage() {
   const { programs, loading } = useMentorPrograms();
@@ -38,9 +39,7 @@ export default function MentorProgramsPage() {
                 <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
                   <BookOpen className="w-5 h-5 text-indigo-600" />
                 </div>
-                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs capitalize">
-                  {program.status || 'active'}
-                </span>
+                <StatusBadge status={program.status || 'active'} noIcon />
               </div>
 
               {/* Name & Description */}

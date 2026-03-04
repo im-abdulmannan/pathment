@@ -1,9 +1,7 @@
 'use client';
 
 import { use } from 'react';
-import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
   Star,
   Send,
   CheckCircle2,
@@ -19,6 +17,7 @@ import {
 } from 'lucide-react';
 import RichTextEditor from '@/components/shared/RichTextEditor';
 import { useMentorTaskFeedback } from '@/lib/hooks/mentor';
+import { PageHeader } from '@/components/admin/ui';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -26,7 +25,6 @@ interface PageProps {
 
 export default function FeedbackProvision({ params }: PageProps) {
   const resolvedParams = use(params);
-  const router = useRouter();
   const {
     task,
     submission,
@@ -85,13 +83,10 @@ export default function FeedbackProvision({ params }: PageProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <button
-        onClick={() => router.push('/mentor/tasks')}
-        className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        Back to Review Queue
-      </button>
+      <PageHeader
+        backHref="/mentor/tasks"
+        backLabel="Back to Review Queue"
+      />
 
       {/* Success Message */}
       {showSuccess && (

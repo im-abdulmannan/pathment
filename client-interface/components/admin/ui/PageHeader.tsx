@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 interface PageHeaderProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   /** Shows an ← back link */
   backHref?: string;
@@ -25,7 +25,7 @@ export function PageHeader({ title, subtitle, backHref, backLabel = 'Back', acti
             {backLabel}
           </Link>
         )}
-        <h1 className="text-2xl font-bold text-slate-900 mb-1">{title}</h1>
+        {title && <h1 className="text-2xl font-bold text-slate-900 mb-1">{title}</h1>}
         {subtitle && <p className="text-slate-500 text-sm">{subtitle}</p>}
       </div>
       {actions && (

@@ -2,6 +2,8 @@
 
 import { Loader2, Save, User, Mail, Phone, Briefcase, Users, Bell, Shield, CheckCircle2 } from 'lucide-react';
 import { useMentorSettings } from '@/lib/hooks/mentor';
+import { PageHeader, TabBar } from '@/components/admin/ui';
+import type { Tab } from '@/components/admin/ui';
 
 export default function MentorSettings() {
   const {
@@ -31,44 +33,26 @@ export default function MentorSettings() {
     );
   }
 
-  const tabs = [
+  const tabs: Tab[] = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'mentor', label: 'Mentor Info', icon: Briefcase },
     { id: 'availability', label: 'Availability', icon: Users },
     { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'security', label: 'Security', icon: Shield }
+    { id: 'security', label: 'Security', icon: Shield },
   ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-slate-900 mb-2">Settings</h1>
-        <p className="text-slate-600">Manage your account preferences and mentor profile</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        subtitle="Manage your account preferences and mentor profile"
+      />
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="border-b border-slate-200 overflow-x-auto">
-          <div className="flex">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-4 border-b-2 transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'border-indigo-600 text-indigo-600 font-medium'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Icon className="w-5 h-5" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="px-2 overflow-x-auto">
+          <TabBar tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         </div>
 
         <div className="p-8">

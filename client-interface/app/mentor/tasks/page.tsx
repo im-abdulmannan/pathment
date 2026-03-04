@@ -7,6 +7,8 @@ import {
   Loader2, FileText, Star, XCircle, AlertTriangle, BookOpen, CalendarClock
 } from 'lucide-react';
 import { useMentorTasks } from '@/lib/hooks/mentor';
+import { StatsCard, TabBar, StatusBadge } from '@/components/admin/ui';
+import type { Tab } from '@/components/admin/ui';
 
 export default function MentorTasks() {
   const router = useRouter();
@@ -48,23 +50,6 @@ export default function MentorTasks() {
   } = useMentorTasks();
 
   // ─── UI helpers ──────────────────────────────────────────────────────────
-
-  const getStatusBadge = (status: string) => {
-    const badges: any = {
-      assigned: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Assigned' },
-      in_progress: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'In Progress' },
-      submitted: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Submitted' },
-      revision_needed: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Needs Revision' },
-      completed: { bg: 'bg-green-100', text: 'text-green-700', label: 'Completed' },
-      cancelled: { bg: 'bg-red-100', text: 'text-red-700', label: 'Cancelled' }
-    };
-    const badge = badges[status] || badges.assigned;
-    return (
-      <span className={`px-3 py-1 ${badge.bg} ${badge.text} rounded-lg text-sm font-medium`}>
-        {badge.label}
-      </span>
-    );
-  };
 
   const getTaskSourceBadge = (isCustomTask: boolean) =>
     isCustomTask ? (
@@ -140,100 +125,24 @@ export default function MentorTasks() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center">
-              <Clock className="w-5 h-5 text-yellow-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Pending Review</div>
-          <div className="text-slate-900 text-2xl">{statsLoading ? '—' : stats?.pendingReview || 0}</div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Reviewed Today</div>
-          <div className="text-slate-900 text-2xl">{statsLoading ? '—' : stats?.reviewedToday || 0}</div>
-        </div>
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-indigo-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Total Tasks</div>
-          <div className="text-slate-900 text-2xl">{statsLoading ? '—' : stats?.total || 0}</div>
-        </div>
+        <StatsCard icon={Clock}         label="Pending Review"  value={statsLoading ? '—' : stats?.pendingReview || 0} colorClass="text-yellow-600 bg-yellow-100" />
+        <StatsCard icon={CheckCircle2}  label="Reviewed Today"  value={statsLoading ? '—' : stats?.reviewedToday || 0} colorClass="text-green-600 bg-green-100" />
+        <StatsCard icon={ClipboardList} label="Total Tasks"     value={statsLoading ? '—' : stats?.total || 0}         colorClass="text-indigo-600 bg-indigo-100" />
       </div>
 
       {/* Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200">
-        <div className="border-b border-slate-200">
-          <div className="flex gap-6 px-6">
-            <button
-              onClick={() => handleTabSwitch('pending')}
-              className={`py-4 px-2 border-b-2 transition-colors ${activeTab === 'pending' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
-            >
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Pending Review
-                {pendingTasks.length > 0 && (
-                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs">
-                    {pendingTasks.length}
-                  </span>
-                )}
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleTabSwitch('extensions')}
-              className={`py-4 px-2 border-b-2 transition-colors ${activeTab === 'extensions' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
-            >
-              <div className="flex items-center gap-2">
-                <CalendarClock className="w-5 h-5" />
-                Extensions
-                {allTasksLoaded && extensionTasks.length > 0 && (
-                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium">
-                    {extensionTasks.length}
-                  </span>
-                )}
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleTabSwitch('all')}
-              className={`py-4 px-2 border-b-2 transition-colors ${activeTab === 'all' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
-            >
-              <div className="flex items-center gap-2">
-                <ClipboardList className="w-5 h-5" />
-                All Tasks
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleTabSwitch('roadmap')}
-              className={`py-4 px-2 border-b-2 transition-colors ${activeTab === 'roadmap' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Program Roadmap
-              </div>
-            </button>
-
-            <button
-              onClick={() => handleTabSwitch('create')}
-              className={`py-4 px-2 border-b-2 transition-colors ${activeTab === 'create' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-600 hover:text-slate-900'}`}
-            >
-              <div className="flex items-center gap-2">
-                <Plus className="w-5 h-5" />
-                Create Custom Task
-              </div>
-            </button>
-          </div>
-        </div>
+        <TabBar
+          tabs={[
+            { id: 'pending',    label: 'Pending Review',     icon: Clock,         count: pendingTasks.length > 0 ? pendingTasks.length : undefined },
+            { id: 'extensions', label: 'Extensions',         icon: CalendarClock, count: allTasksLoaded && extensionTasks.length > 0 ? extensionTasks.length : undefined },
+            { id: 'all',        label: 'All Tasks',          icon: ClipboardList },
+            { id: 'roadmap',    label: 'Program Roadmap',    icon: FileText },
+            { id: 'create',     label: 'Create Custom Task', icon: Plus },
+          ] as Tab[]}
+          activeTab={activeTab}
+          onChange={(id) => handleTabSwitch(id as any)}
+        />
 
         {/* Tab Content */}
         <div className="p-6">
@@ -270,7 +179,7 @@ export default function MentorTasks() {
                             <span>Submitted {task.submittedAt ? new Date(task.submittedAt).toLocaleDateString() : 'recently'}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">{getStatusBadge(task.status)}</div>
+                        <div className="flex items-center gap-2"><StatusBadge status={task.status} /></div>
                       </div>
 
                       {task.submissions?.[0] && (
@@ -487,7 +396,7 @@ export default function MentorTasks() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                {getStatusBadge(task.status)}
+                                <StatusBadge status={task.status} />
                                 {pendingExtension ? (
                                   <button onClick={() => router.push(`/mentor/tasks/${task.id}`)} className="px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors">
                                     Handle Extension

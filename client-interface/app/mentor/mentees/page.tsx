@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Search, Filter, Users, TrendingUp, Clock, CheckCircle2, Loader2, MessageSquare } from 'lucide-react';
+import { Users, TrendingUp, CheckCircle2, Loader2, MessageSquare, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMentorMentees } from '@/lib/hooks/mentor';
+import { StatsCard, SearchAndFilterBar, ProgressBar, StatusBadge } from '@/components/admin/ui';
 
 export default function MyMentees() {
   const {
@@ -34,70 +35,44 @@ export default function MyMentees() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-              <Users className="w-5 h-5 text-indigo-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Total Mentees</div>
-          <div className="text-slate-900 text-2xl">{matches.length}</div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Avg Progress</div>
-          <div className="text-slate-900 text-2xl">
-            {matches.length > 0 
-              ? Math.round(matches.reduce((acc, m) => acc + (parseFloat(m.enrollment?.overallProgressPercentage) || 0), 0) / matches.length)
-              : 0}%
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-purple-600" />
-            </div>
-          </div>
-          <div className="text-slate-600 text-sm mb-1">Programs</div>
-          <div className="text-slate-900 text-2xl">{programs.length}</div>
-        </div>
+        <StatsCard
+          icon={Users}
+          label="Total Mentees"
+          value={matches.length}
+          colorClass="text-indigo-600 bg-indigo-100"
+        />
+        <StatsCard
+          icon={TrendingUp}
+          label="Avg Progress"
+          value={`${matches.length > 0
+            ? Math.round(matches.reduce((acc, m) => acc + (parseFloat(m.enrollment?.overallProgressPercentage) || 0), 0) / matches.length)
+            : 0}%`}
+          colorClass="text-green-600 bg-green-100"
+        />
+        <StatsCard
+          icon={CheckCircle2}
+          label="Programs"
+          value={programs.length}
+          colorClass="text-purple-600 bg-purple-100"
+        />
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search by name or program..."
-              className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
-
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <select
-              value={filterProgram}
-              onChange={(e) => setFilterProgram(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none"
-            >
-              <option value="all">All Programs</option>
-              {programs.map(program => (
-                <option key={program} value={program}>{program}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      <SearchAndFilterBar
+        search={searchTerm}
+        onSearch={setSearchTerm}
+        placeholder="Search by name or program..."
+        filters={[
+          {
+            value: filterProgram,
+            onChange: setFilterProgram,
+            options: [
+              { value: 'all', label: 'All Programs' },
+              ...programs.map((p) => ({ value: p, label: p })),
+            ],
+          },
+        ]}
+      />
 
       {/* Mentees List */}
       <div className="bg-white rounded-2xl border border-slate-200">
@@ -147,9 +122,7 @@ export default function MyMentees() {
                             {mentee?.email}
                           </p>
                         </div>
-                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-lg text-sm">
-                          Active
-                        </span>
+                        <StatusBadge status="active" />
                       </div>
 
                       <div className="mb-3">
@@ -169,16 +142,11 @@ export default function MyMentees() {
                       </div>
 
                       <div className="mb-3">
-                        <div className="flex items-center justify-between text-sm mb-2">
-                          <span className="text-slate-600">Overall Progress</span>
-                          <span className="text-slate-900">{progress}%</span>
-                        </div>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full ${getProgressColor(progress)} rounded-full transition-all`}
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
+                        <ProgressBar
+                          value={progress}
+                          color={getProgressColor(progress)}
+                          sub="Overall Progress"
+                        />
                       </div>
 
                       <div className="flex items-center gap-4 text-sm">

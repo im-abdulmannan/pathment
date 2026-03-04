@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
-  ArrowLeft,
   BookOpen,
   Users,
   Clock,
@@ -14,6 +13,8 @@ import {
   Target,
 } from 'lucide-react';
 import { useMentorProgramDetail } from '@/lib/hooks/mentor';
+import { PageHeader, TabBar, StatusBadge } from '@/components/admin/ui';
+import type { Tab } from '@/components/admin/ui';
 
 export default function MentorProgramDetail() {
   const params = useParams();
@@ -34,11 +35,11 @@ export default function MentorProgramDetail() {
     toggleWeek,
   } = useMentorProgramDetail(id);
 
-  const tabs = [
+  const tabs: Tab[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'roadmap', label: 'Roadmap' },
-    { id: 'mentees', label: `My Mentees (${myMentees.length})` },
-  ] as const;
+    { id: 'mentees', label: 'My Mentees', count: myMentees.length },
+  ];
 
   if (loading) {
     return (
@@ -62,13 +63,10 @@ export default function MentorProgramDetail() {
   return (
     <div className="space-y-6">
       {/* Back */}
-      <Link
-        href="/mentor/programs"
-        className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors text-sm"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Programs
-      </Link>
+      <PageHeader
+        backHref="/mentor/programs"
+        backLabel="Back to Programs"
+      />
 
       {/* Hero Card */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
@@ -80,9 +78,7 @@ export default function MentorProgramDetail() {
               </div>
               <div>
                 <h1 className="text-slate-900">{program.name}</h1>
-                <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-md text-xs capitalize">
-                  {program.status}
-                </span>
+                <StatusBadge status={program.status} noIcon />
               </div>
             </div>
             <p className="text-slate-600 mt-3">{program.description || 'No description available'}</p>
@@ -118,21 +114,7 @@ export default function MentorProgramDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <TabBar tabs={tabs} activeTab={activeTab} onChange={(id) => setActiveTab(id as any)} variant="pill" />
 
       {/* ── OVERVIEW TAB ── */}
       {activeTab === 'overview' && (

@@ -1,22 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Users, ClipboardList, Star, Clock, CheckCircle2, TrendingUp, Loader2, BookOpen } from 'lucide-react';
+import { Users, ClipboardList, Star, Clock, CheckCircle2, Loader2, BookOpen, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useMentorDashboard } from '@/lib/hooks/mentor';
+import { StatsCard, ProgressBar } from '@/components/admin/ui';
 
 export default function MentorDashboard() {
   const { user } = useAuth();
   const { activeMentees, programsCount, loading } = useMentorDashboard();
 
   const pendingReviewsCount = 0; // TODO: Implement task submissions API
-
-  const stats = [
-    { label: 'Active Mentees', value: activeMentees.length.toString(), icon: Users, color: 'indigo' },
-    { label: 'Programs', value: programsCount.toString(), icon: BookOpen, color: 'blue' },
-    { label: 'Pending Reviews', value: pendingReviewsCount.toString(), icon: Clock, color: 'yellow' },
-    { label: 'Avg. Rating', value: '4.9', icon: Star, color: 'purple' },
-  ];
 
   const recentActivity: any[] = []; // TODO: Implement activity feed
 
@@ -30,27 +24,10 @@ export default function MentorDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
-          const bgColor = stat.color === 'indigo' ? 'bg-indigo-100' :
-                         stat.color === 'yellow' ? 'bg-yellow-100' :
-                         stat.color === 'blue' ? 'bg-blue-100' : 'bg-purple-100';
-          const textColor = stat.color === 'indigo' ? 'text-indigo-600' :
-                           stat.color === 'yellow' ? 'text-yellow-600' :
-                           stat.color === 'blue' ? 'text-blue-600' : 'text-purple-600';
-
-          return (
-            <div key={stat.label} className="bg-white rounded-2xl border border-slate-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 ${bgColor} rounded-xl flex items-center justify-center`}>
-                  <Icon className={`w-6 h-6 ${textColor}`} />
-                </div>
-              </div>
-              <div className="text-3xl text-slate-900 mb-1">{stat.value}</div>
-              <div className="text-slate-600 text-sm">{stat.label}</div>
-            </div>
-          );
-        })}
+        <StatsCard icon={Users}    label="Active Mentees"  value={activeMentees.length} colorClass="text-indigo-600 bg-indigo-50" />
+        <StatsCard icon={BookOpen} label="Programs"        value={programsCount}        colorClass="text-blue-600 bg-blue-50" />
+        <StatsCard icon={Clock}    label="Pending Reviews" value={pendingReviewsCount}  colorClass="text-yellow-600 bg-yellow-50" />
+        <StatsCard icon={Star}     label="Avg. Rating"     value="4.9"                  colorClass="text-purple-600 bg-purple-50" />
       </div>
 
       {/* Main Content */}
@@ -112,17 +89,7 @@ export default function MentorDashboard() {
                       </div>
 
                       {/* Progress Bar */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-indigo-600 rounded-full"
-                            style={{ width: `${parseFloat(enrollment?.overallProgressPercentage) || 0}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-slate-600">
-                          {parseFloat(enrollment?.overallProgressPercentage) || 0}%
-                        </span>
-                      </div>
+                      <ProgressBar value={parseFloat(enrollment?.overallProgressPercentage) || 0} size="sm" />
                     </div>
                   );
                 })}
