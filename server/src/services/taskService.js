@@ -551,15 +551,21 @@ class TaskService {
       ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
       : null;
 
-    // Total tasks = SUM of totalTasks across every base roadmap in the program.
-    // This gives the full program scope (all levels), not just what's been assigned.
-    const { fn, col } = require('sequelize');
-    const roadmapAgg = await models.Roadmap.findOne({
-      where: { programId: enrollment.programId, isBaseRoadmap: true },
-      attributes: [[fn('SUM', col('total_tasks')), 'programTotal']],
-      raw: true
+    // Total tasks = live COUNT of RoadmapTask rows for every base roadmap in the program.
+    // (The Roadmap.total_tasks column is never updated when tasks are added, so we count directly.)
+    const tasksTotal = await models.RoadmapTask.count({
+      include: [{
+        model: models.RoadmapWeek,
+        as: 'week',
+        required: true,
+        include: [{
+          model: models.Roadmap,
+          as: 'roadmap',
+          required: true,
+          where: { programId: enrollment.programId, isBaseRoadmap: true }
+        }]
+      }]
     });
-    const tasksTotal = parseInt(roadmapAgg?.programTotal || 0, 10);
 
     // Percentage against the full program — grows steadily as work is done
     const overallProgressPercentage = tasksTotal > 0
