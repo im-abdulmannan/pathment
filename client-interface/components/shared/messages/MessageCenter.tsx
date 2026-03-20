@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 import { messagingApi } from '@/lib/services/messaging-api';
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/services/socket-client';
 import { useAuth } from '@/lib/context/AuthContext';
-import type { ChatMessage, ConversationSummary } from '@/lib/types/messaging';
+import type { ChatMessage, ConversationSummary, SearchableUser } from '@/lib/types/messaging';
+import UserSearchCombobox from './UserSearchCombobox';
 
 interface MessageCenterProps {
   role: 'admin' | 'mentor' | 'mentee';
@@ -43,7 +44,6 @@ export default function MessageCenter({ role }: MessageCenterProps) {
   const [isSending, setIsSending] = useState(false);
 
   const [composer, setComposer] = useState('');
-  const [startParticipantId, setStartParticipantId] = useState('');
   const messageListEndRef = useRef<HTMLDivElement | null>(null);
 
   const participantId = searchParams.get('participantId');
@@ -265,18 +265,12 @@ export default function MessageCenter({ role }: MessageCenterProps) {
     }
   };
 
-  const handleStartConversation = async () => {
-    const participant = startParticipantId.trim();
-    if (!participant) {
-      return;
-    }
-
+  const handleStartConversation = async (selectedUser: SearchableUser) => {
     try {
-      const conversation = await messagingApi.createDirectConversation(participant);
+      const conversation = await messagingApi.createDirectConversation(selectedUser.id);
       const list = await loadConversations();
       const nextConversationId = conversation?.id || list[0]?.id || null;
 
-      setStartParticipantId('');
       setSelectedConversationId(nextConversationId);
       if (nextConversationId) {
         await loadMessages(nextConversationId);
@@ -304,18 +298,7 @@ export default function MessageCenter({ role }: MessageCenterProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <input
-            value={startParticipantId}
-            onChange={(event) => setStartParticipantId(event.target.value)}
-            placeholder="Recipient User ID"
-            className="h-10 w-44 border border-slate-200 rounded-lg px-3 text-sm"
-          />
-          <button
-            onClick={handleStartConversation}
-            className="h-10 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm"
-          >
-            Start Chat
-          </button>
+          <UserSearchCombobox onSelect={handleStartConversation} />
           <button
             onClick={async () => {
               await loadConversations();

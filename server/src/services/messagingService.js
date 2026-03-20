@@ -549,6 +549,39 @@ class MessagingService {
     });
   }
 
+  async searchUsers(currentUserId, query = '', options = {}) {
+    const limit = Math.min(Math.max(Number(options.limit || 10), 1), 25);
+    const roleFilter = options.role;
+
+    const where = {
+      id: { [Op.ne]: currentUserId },
+      status: 'active',
+      deletedAt: null
+    };
+
+    if (roleFilter && ['admin', 'mentor', 'mentee'].includes(roleFilter)) {
+      where.role = roleFilter;
+    }
+
+    if (query.trim()) {
+      const term = `%${query.trim()}%`;
+      where[Op.or] = [
+        { firstName: { [Op.iLike]: term } },
+        { lastName: { [Op.iLike]: term } },
+        { email: { [Op.iLike]: term } }
+      ];
+    }
+
+    const users = await models.User.findAll({
+      attributes: ['id', 'firstName', 'lastName', 'email', 'role', 'profilePictureUrl'],
+      where,
+      order: [['firstName', 'ASC'], ['lastName', 'ASC']],
+      limit
+    });
+
+    return users.map((u) => u.toJSON());
+  }
+
   async assertUserInConversation(userId, conversationId) {
     const participant = await models.ConversationParticipant.findOne({
       where: {

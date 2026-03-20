@@ -3,6 +3,12 @@ const Joi = require('joi');
 const uuid = Joi.string().uuid().required();
 
 const messagingSchemas = {
+  searchUsersQuery: Joi.object({
+    q: Joi.string().trim().max(100).allow('').optional(),
+    role: Joi.string().valid('admin', 'mentor', 'mentee').optional(),
+    limit: Joi.number().integer().min(1).max(25).default(10)
+  }),
+
   createDirectConversation: Joi.object({
     participantId: uuid,
     relatedTaskId: Joi.string().uuid().optional(),

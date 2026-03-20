@@ -134,4 +134,13 @@ exports.deleteNotification = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('Notification deleted successfully', {}));
 });
 
+exports.searchUsers = catchAsync(async (req, res) => {
+  const users = await messagingService.searchUsers(req.user.id, req.query.q, {
+    role: req.query.role,
+    limit: req.query.limit
+  });
+
+  res.status(200).json(successResponse('Users fetched successfully', { users }));
+});
+
 module.exports = exports;

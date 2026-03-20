@@ -57,3 +57,12 @@ export interface NotificationItem {
   readAt?: string;
   createdAt: string;
 }
+
+export interface SearchableUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: 'admin' | 'mentor' | 'mentee';
+  profilePictureUrl?: string;
+}

@@ -8,6 +8,8 @@ const { messagingSchemas } = require('../validations/messagingValidation');
 
 router.use(authenticate, authorize(['admin', 'mentor', 'mentee']));
 
+router.get('/users/search', validateQuery(messagingSchemas.searchUsersQuery), messagingController.searchUsers);
+
 router.get('/conversations', messagingController.getConversations);
 router.post('/conversations/direct', validateBody(messagingSchemas.createDirectConversation), messagingController.createDirectConversation);
 router.get('/conversations/:conversationId/messages', validateParams(messagingSchemas.conversationParams), validateQuery(messagingSchemas.listMessagesQuery), messagingController.getConversationMessages);

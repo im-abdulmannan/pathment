@@ -1,5 +1,5 @@
 import { apiClient } from './api-client';
-import type { ChatMessage, ConversationSummary, NotificationItem } from '@/lib/types/messaging';
+import type { ChatMessage, ConversationSummary, NotificationItem, SearchableUser } from '@/lib/types/messaging';
 
 export interface SendMessagePayload {
   conversationId: string;
@@ -68,5 +68,15 @@ export const messagingApi = {
   async deleteNotification(notificationId: string): Promise<any> {
     const response = await apiClient.delete(`/messaging/notifications/${notificationId}`);
     return response.data;
+  },
+
+  async searchUsers(query: string, role?: string): Promise<SearchableUser[]> {
+    const params = new URLSearchParams({ q: query, limit: '10' });
+    if (role) {
+      params.set('role', role);
+    }
+
+    const response = await apiClient.get<any>(`/messaging/users/search?${params.toString()}`);
+    return response.data?.users || [];
   },
 };
