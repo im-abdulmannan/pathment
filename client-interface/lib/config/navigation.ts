@@ -6,7 +6,6 @@ import {
   ClipboardList,
   Trophy,
   MessageSquare,
-  Bell,
   UserPlus,
   Settings,
   type LucideIcon
@@ -28,7 +27,6 @@ export const navigationConfig = {
     { path: '/admin/enrollment/overview', icon: Users, label: 'Enrollments' },
     { path: '/admin/invites', icon: UserPlus, label: 'Invites' },
     { path: '/admin/messages', icon: MessageSquare, label: 'Messages', hasBadge: true },
-    { path: '/admin/notifications', icon: Bell, label: 'Notifications' },
     { path: '/admin/settings', icon: Settings, label: 'Settings' },
   ],
   mentor: [
@@ -37,7 +35,6 @@ export const navigationConfig = {
     { path: '/mentor/mentees', icon: Users, label: 'My Mentees' },
     { path: '/mentor/tasks', icon: ClipboardList, label: 'Tasks' },
     { path: '/mentor/messages', icon: MessageSquare, label: 'Messages', hasBadge: true },
-    { path: '/mentor/notifications', icon: Bell, label: 'Notifications' },
     { path: '/mentor/settings', icon: Settings, label: 'Settings' },
   ],
   mentee: [
@@ -46,7 +43,6 @@ export const navigationConfig = {
     { path: '/mentee/tasks', icon: ClipboardList, label: 'My Tasks' },
     { path: '/mentee/gamification', icon: Trophy, label: 'Gamification' },
     { path: '/mentee/messages', icon: MessageSquare, label: 'Messages', hasBadge: true },
-    { path: '/mentee/notifications', icon: Bell, label: 'Notifications' },
     { path: '/mentee/settings', icon: Settings, label: 'Settings' },
   ],
 } as const;
