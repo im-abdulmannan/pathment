@@ -9,7 +9,6 @@ import {
   LogOut,
   Menu,
   X,
-  Settings,
 } from 'lucide-react';
 import { getNavigationLinks } from '@/lib/config/navigation';
 import { NotificationDrawer } from './NotificationDrawer';
@@ -139,17 +138,6 @@ export default function Navigation({ role }: NavigationProps) {
                 <NotificationDrawer userId={user.id} apiBaseUrl={apiBaseUrl} showLabel />
               )}
             </div>
-            <Link 
-              href={`/${role}/settings`}
-              className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-colors ${
-                pathname === `/${role}/settings`
-                  ? 'bg-indigo-50 text-indigo-700 font-medium'
-                  : 'text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              <Settings className="w-5 h-5" />
-              <span>Settings</span>
-            </Link>
             <button 
               onClick={handleLogout}
               className="flex items-center gap-3 px-4 py-3 w-full text-red-600 hover:bg-red-50 rounded-xl transition-colors text-left"
@@ -216,18 +204,6 @@ export default function Navigation({ role }: NavigationProps) {
                   </Link>
                 );
               })}
-              <Link 
-                href={`/${role}/settings`}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-colors ${
-                  pathname === `/${role}/settings`
-                    ? 'bg-indigo-50 text-indigo-700 font-medium'
-                    : 'text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <Settings className="w-5 h-5" />
-                <span>Settings</span>
-              </Link>
               <button 
                 onClick={handleLogout}
                 className="flex items-center gap-3 px-4 py-3 w-full text-red-600 hover:bg-red-50 rounded-xl transition-colors text-left"
