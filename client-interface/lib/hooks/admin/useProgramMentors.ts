@@ -56,11 +56,13 @@ interface UseProgramMentorsReturn {
   handleAddMentor: (levelId: string) => Promise<void>;
   handleRemoveMentor: (levelId: string, mentorId: string) => Promise<void>;
   refetch: () => Promise<void>;
+  id: string;
 }
 
 export function useProgramMentors(): UseProgramMentorsReturn {
   const params = useParams();
-  const programId = params?.id as string;
+  const rawId = params?.id as string;
+  const programId = rawId && rawId !== 'undefined' && rawId !== 'null' ? rawId : '';
 
   const [loading, setLoading] = useState(true);
   const [assignments, setAssignments] = useState<LevelAssignment[]>([]);
@@ -182,5 +184,6 @@ export function useProgramMentors(): UseProgramMentorsReturn {
     handleAddMentor,
     handleRemoveMentor,
     refetch: fetchData,
+    id: programId,
   };
 }
