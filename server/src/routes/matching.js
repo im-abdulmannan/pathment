@@ -10,5 +10,6 @@ router.get('/levels/:levelId/mentors', authenticate, matchingController.getLevel
 router.get('/mentor-levels', authenticate, matchingController.getMentorAssignedLevels);
 router.get('/', authenticate, matchingController.getMatches);
 router.patch('/:id/status', authenticate, matchingController.updateMatchStatus);
+router.patch('/:id/rate', authenticate, authorize(['mentee', 'mentor', 'admin']), matchingController.submitRating);
 
 module.exports = router;

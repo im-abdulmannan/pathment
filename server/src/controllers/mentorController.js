@@ -91,35 +91,80 @@ const getMentorById = catchAsync(async (req, res) => {
 
   if (!mentor) throw new NotFoundError('Mentor not found');
 
-  // Fetch active matches (current mentees)
+  // ── Live stats (stored columns are never updated so we compute them here) ──
+  const allMatches = await models.MentorMenteeMatch.findAll({
+    where: { mentorId: id },
+    attributes: ['menteeSatisfactionRating'],
+    include: [{
+      model: models.Enrollment,
+      as: 'enrollment',
+      attributes: ['status'],
+      required: false,
+    }],
+  }).catch(() => []);
+
+  const totalMenteesGuided = allMatches.length;
+
+  const completedCount = allMatches.filter(
+    m => m.enrollment?.status === 'program_completed'
+  ).length;
+
+  const successRate = totalMenteesGuided > 0
+    ? parseFloat(((completedCount / totalMenteesGuided) * 100).toFixed(1))
+    : 0;
+
+  const ratedMatches = allMatches.filter(m => m.menteeSatisfactionRating != null);
+  const avgFeedbackRating = ratedMatches.length > 0
+    ? parseFloat(
+        (ratedMatches.reduce((sum, m) => sum + parseFloat(m.menteeSatisfactionRating), 0) / ratedMatches.length).toFixed(1)
+      )
+    : null;
+
+  // Fetch active matches — match must be active AND enrollment must not be terminated.
+  // Matches are sometimes left in 'active' state even after the enrollment reaches
+  // program_completed or dropped, so we exclude those enrollment statuses explicitly.
+  const TERMINAL_ENROLLMENT_STATUSES = ['program_completed', 'dropped', 'rejected', 'withdrawn'];
+
   const activeMatches = await models.MentorMenteeMatch.findAll({
+    attributes: ['id', 'status', 'matchedAt'],
     where: { mentorId: id, status: 'active' },
     include: [
       {
         model: models.User,
         as: 'mentee',
-        attributes: ['id', 'firstName', 'lastName', 'email']
+        attributes: ['id', 'firstName', 'lastName', 'email'],
       },
       {
         model: models.Enrollment,
         as: 'enrollment',
         attributes: ['id', 'status', 'overallProgressPercentage'],
+        where: { status: { [Op.notIn]: TERMINAL_ENROLLMENT_STATUSES } },
+        required: true,
         include: [{
           model: models.Program,
           as: 'program',
-          attributes: ['id', 'name']
-        }]
-      }
+          attributes: ['id', 'name'],
+        }],
+      },
     ],
-    limit: 20
-  }).catch(() => []);  // graceful fallback if model not fully set up
+    order: [['matchedAt', 'DESC']],
+    limit: 20,
+  }).catch(() => []);
+
+  const mentorJson = mentor.toJSON();
+  // Override stale stored stats with live-computed values
+  if (mentorJson.mentorProfile) {
+    mentorJson.mentorProfile.totalMenteesGuided = totalMenteesGuided;
+    mentorJson.mentorProfile.successRate = successRate;
+    mentorJson.mentorProfile.avgFeedbackRating = avgFeedbackRating;
+  }
 
   res.status(200).json({
     success: true,
     message: 'Mentor profile retrieved successfully',
     statusCode: 200,
     data: {
-      mentor: mentor.toJSON(),
+      mentor: mentorJson,
       activeMatches
     }
   });

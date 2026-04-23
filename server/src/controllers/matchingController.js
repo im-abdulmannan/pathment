@@ -1,6 +1,8 @@
+const { models } = require('../db');
 const matchingService = require('../services/matchingService');
 const { successResponse } = require('../utils/responses');
 const { catchAsync } = require('../middlewares/errorHandler');
+const { NotFoundError, ValidationError, ForbiddenError } = require('../utils/errors/errorTypes');
 
 /**
  * Create mentor-mentee match
@@ -80,6 +82,57 @@ exports.getMentorAssignedLevels = catchAsync(async (req, res) => {
   const mentorId = req.user.id;
   const programs = await matchingService.getMentorAssignedLevels(mentorId);
   res.status(200).json(successResponse('Mentor level assignments retrieved', { programs }));
+});
+
+/**
+ * Submit a satisfaction rating for a match
+ * PATCH /api/matching/:id/rate
+ *
+ * - Mentee  → sets menteeSatisfactionRating  (rates their mentor)
+ * - Mentor  → sets mentorSatisfactionRating  (rates their mentee)
+ * - Admin   → can set either field explicitly
+ *
+ * Body: { rating: 1-5 }
+ */
+exports.submitRating = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { rating } = req.body;
+  const { id: userId, role } = req.user;
+
+  if (rating == null || isNaN(rating) || rating < 1 || rating > 5) {
+    throw new ValidationError('rating must be a number between 1 and 5');
+  }
+
+  const match = await models.MentorMenteeMatch.findByPk(id);
+  if (!match) throw new NotFoundError('Match not found');
+
+  const updates = {};
+
+  if (role === 'mentee') {
+    if (match.menteeId !== userId) throw new ForbiddenError('You are not the mentee of this match');
+    updates.menteeSatisfactionRating = parseFloat(rating);
+  } else if (role === 'mentor') {
+    if (match.mentorId !== userId) throw new ForbiddenError('You are not the mentor of this match');
+    updates.mentorSatisfactionRating = parseFloat(rating);
+  } else if (role === 'admin') {
+    // Admin can specify which side to rate via query param ?side=mentee|mentor
+    const side = req.query.side;
+    if (side === 'mentor') {
+      updates.mentorSatisfactionRating = parseFloat(rating);
+    } else {
+      // default to mentee-side rating for admin
+      updates.menteeSatisfactionRating = parseFloat(rating);
+    }
+  } else {
+    throw new ForbiddenError('Not authorised to rate this match');
+  }
+
+  await match.update(updates);
+
+  res.status(200).json(successResponse('Rating submitted successfully', {
+    matchId: id,
+    ...updates,
+  }));
 });
 
 module.exports = exports;
