@@ -279,12 +279,12 @@ export default function NotificationDrawer({
       {/* Notification Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`relative rounded-lg transition-colors duration-200 ${
-          showLabel ? 'w-full flex items-center gap-3 px-4 py-3 text-left' : 'p-2'
+        className={`relative rounded-xl transition-colors duration-200 ${
+          showLabel ? 'w-full flex items-center gap-3 px-3 py-2.5 text-left' : 'p-2'
         } ${
           isOpen
-            ? 'bg-indigo-100 text-indigo-700'
-            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+            ? 'bg-indigo-50 text-indigo-700'
+            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
         }`}
         aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
         aria-expanded={isOpen}
@@ -292,7 +292,7 @@ export default function NotificationDrawer({
         title="Open notifications"
       >
         <span className="relative shrink-0">
-          <Bell className="w-5 h-5" />
+          <Bell className={showLabel ? 'w-4 h-4' : 'w-5 h-5'} />
           {unreadCount > 0 && (
             <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full">
               {unreadCount > 99 ? '99+' : unreadCount}
