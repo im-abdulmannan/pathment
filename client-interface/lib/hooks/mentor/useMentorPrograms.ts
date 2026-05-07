@@ -21,25 +21,32 @@ export function useMentorPrograms(): UseMentorProgramsReturn {
     if (!user?.id) return;
     try {
       setLoading(true);
-      const response = await matchingApi.getMatches({ mentorId: user.id, status: 'active' });
-      const matches = response?.data?.matches || response?.matches || [];
 
-      const programMap = new Map<string, any>();
+      // Fetch programs via level assignments (source of truth — works even with 0 mentees)
+      const assignedResponse = await matchingApi.getMentorAssignedLevels();
+      const assignedPrograms: any[] = assignedResponse?.data?.programs || assignedResponse?.programs || [];
+
+      // Also fetch active matches to compute mentee counts and average progress
+      const matchesResponse = await matchingApi.getMatches({ mentorId: user.id, status: 'active' });
+      const matches: any[] = matchesResponse?.data?.matches || matchesResponse?.matches || [];
+
+      // Build a per-program stats map from matches
+      const statsMap = new Map<string, { menteeCount: number; totalProgress: number }>();
       for (const match of matches) {
-        const prog = match.enrollment?.program;
-        if (!prog) continue;
-        if (!programMap.has(prog.id)) {
-          programMap.set(prog.id, { ...prog, menteeCount: 0, avgProgress: 0, totalProgress: 0 });
-        }
-        const entry = programMap.get(prog.id);
+        const progId = match.enrollment?.program?.id || match.enrollment?.programId;
+        if (!progId) continue;
+        if (!statsMap.has(progId)) statsMap.set(progId, { menteeCount: 0, totalProgress: 0 });
+        const entry = statsMap.get(progId)!;
         entry.menteeCount += 1;
         entry.totalProgress += parseFloat(match.enrollment?.overallProgressPercentage || 0);
       }
 
-      const programList = Array.from(programMap.values()).map((p) => ({
-        ...p,
-        avgProgress: p.menteeCount > 0 ? Math.round(p.totalProgress / p.menteeCount) : 0,
-      }));
+      const programList = assignedPrograms.map((prog: any) => {
+        const stats = statsMap.get(prog.id);
+        const menteeCount = stats?.menteeCount ?? 0;
+        const avgProgress = menteeCount > 0 ? Math.round(stats!.totalProgress / menteeCount) : 0;
+        return { ...prog, menteeCount, avgProgress };
+      });
 
       setPrograms(programList);
     } catch (error: any) {
