@@ -268,7 +268,10 @@ class SubmissionService {
 
     if (isApproved) {
       updateData.completedAt = new Date();
-      updateData.pointsAwarded = pointsAwarded || 10;
+      const maxPoints = task.roadmapTask?.pointsBase ?? 10;
+      const parsedPoints = Number(pointsAwarded);
+      const safePoints = Number.isFinite(parsedPoints) ? parsedPoints : maxPoints;
+      updateData.pointsAwarded = Math.min(Math.max(0, safePoints), maxPoints);
     } else {
       updateData.revisionCount = task.revisionCount + 1;
     }
@@ -284,9 +287,7 @@ class SubmissionService {
       await this.updateMenteeGamificationProgress(task.menteeId);
 
       const gamificationService = require('./gamificationService');
-      const pointsToAward = Number.isFinite(Number(pointsAwarded))
-        ? Math.max(0, Number(pointsAwarded))
-        : 10;
+      const pointsToAward = updateData.pointsAwarded;
 
       try {
         if (pointsToAward > 0) {
