@@ -31,6 +31,7 @@ export interface UseMentorTaskFeedbackReturn {
   feedbackError: string;
   decisionError: string;
   revisionError: string;
+  pointsError: string;
   setRating: (v: number) => void;
   setHoveredRating: (v: number) => void;
   setFeedbackText: (v: string) => void;
@@ -41,6 +42,7 @@ export interface UseMentorTaskFeedbackReturn {
   setFeedbackError: (v: string) => void;
   setDecisionError: (v: string) => void;
   setRevisionError: (v: string) => void;
+  setPointsError: (v: string) => void;
   addInlineFeedback: () => void;
   updateInlineFeedback: (id: number, field: string, value: string) => void;
   removeInlineFeedback: (id: number) => void;
@@ -69,6 +71,7 @@ export function useMentorTaskFeedback(taskId: string): UseMentorTaskFeedbackRetu
   const [feedbackError, setFeedbackError] = useState('');
   const [decisionError, setDecisionError] = useState('');
   const [revisionError, setRevisionError] = useState('');
+  const [pointsError, setPointsError] = useState('');
 
   useEffect(() => {
     if (!taskId) return;
@@ -117,6 +120,7 @@ export function useMentorTaskFeedback(taskId: string): UseMentorTaskFeedbackRetu
       setFeedbackError('');
       setDecisionError('');
       setRevisionError('');
+      setPointsError('');
 
       if (!submission) {
         setError('No submission found');
@@ -141,15 +145,17 @@ export function useMentorTaskFeedback(taskId: string): UseMentorTaskFeedbackRetu
         setRevisionError('Revision notes are required when requesting a revision.');
         hasError = true;
       }
+      if (decision === 'approve') {
+        const maxPoints = task?.roadmapTask?.pointsBase ?? 10;
+        if (pointsAwarded > maxPoints) {
+          setPointsError(`Maximum points are ${maxPoints}.`);
+          hasError = true;
+        }
+      }
       if (hasError) return;
 
       setIsSubmitting(true);
       try {
-        const maxPoints = task?.roadmapTask?.pointsBase || 10;
-        const safePointsAwarded = decision === 'approve'
-          ? Math.min(Math.max(0, pointsAwarded), maxPoints)
-          : 0;
-
         const validInlineFeedback = inlineFeedback
           .filter((item) => item.comment.trim())
           .map((item) => ({ line: 0, comment: item.comment, type: item.type }));
@@ -159,7 +165,7 @@ export function useMentorTaskFeedback(taskId: string): UseMentorTaskFeedbackRetu
           feedbackText,
           isApproved: decision === 'approve',
           revisionNotes: decision === 'revision' ? revisionNotes : undefined,
-          pointsAwarded: safePointsAwarded,
+          pointsAwarded: decision === 'approve' ? pointsAwarded : 0,
           inlineFeedback: validInlineFeedback,
         } as any);
 
@@ -202,6 +208,7 @@ export function useMentorTaskFeedback(taskId: string): UseMentorTaskFeedbackRetu
     feedbackError,
     decisionError,
     revisionError,
+    pointsError,
     setRating,
     setHoveredRating,
     setFeedbackText,
@@ -212,6 +219,7 @@ export function useMentorTaskFeedback(taskId: string): UseMentorTaskFeedbackRetu
     setFeedbackError,
     setDecisionError,
     setRevisionError,
+    setPointsError,
     addInlineFeedback,
     updateInlineFeedback,
     removeInlineFeedback,
