@@ -94,10 +94,11 @@ if (!menteeProfile) {
 });
 
     // Update user onboarding status
-    await user.update({
-      onboardingStep: 1,
-      profileCompleted: false // Will be true after skills are added (step 2)
-    });
+  
+await user.update({
+  onboardingStep: 1,
+  profileCompleted: true  // Profile IS complete; skills are optional
+});
 
     res.json(successResponse(
       PROFILE_MESSAGES.PROFILE_UPDATED,
