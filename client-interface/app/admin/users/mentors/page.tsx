@@ -383,7 +383,7 @@ export default function AdminMentorsListPage() {
             <AlertDialogAction
               onClick={handleConfirmSuspend}
               disabled={suspendLoading === suspendRow?.id}
-              className={suspendRow?.status === 'suspended' ? 'bg-green-600' : 'bg-amber-600'}
+              className={suspendRow?.status === 'suspended' ? 'bg-green-600' : 'bg-red-600'}
             >
               {suspendLoading === suspendRow?.id ? 'Processing...' : suspendRow?.status === 'suspended' ? 'Unsuspend' : 'Suspend'}
             </AlertDialogAction>

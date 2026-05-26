@@ -357,7 +357,7 @@ export default function AdminMenteesListPage() {
             <AlertDialogAction
               onClick={handleConfirmSuspend}
               disabled={suspendLoading === suspendRow?.id}
-              className={suspendRow?.status === 'suspended' ? 'bg-green-600 hover:bg-green-700' : 'bg-amber-600 hover:bg-amber-700'}
+              className={suspendRow?.status === 'suspended' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
             >
               {suspendLoading === suspendRow?.id
                 ? 'Processing...'
