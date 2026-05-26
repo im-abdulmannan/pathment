@@ -15,6 +15,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useInvites, isRowValid, EMAIL_REGEX, VALID_ROLES, type InviteStatusFilter } from '@/lib/hooks/admin';
+import { DataTable, type DataTableColumn } from '@/components/shared/DataTable';
 
 export default function AdminInvitesPage() {
   const {
@@ -52,6 +53,104 @@ export default function AdminInvitesPage() {
     filteredCsvRows,
     handleBulkSend,
   } = useInvites();
+
+  const csvColumns: DataTableColumn<typeof filteredCsvRows[0]>[] = [
+    {
+      key: '_idx',
+      label: '#',
+      render: (_, row) => {
+        const valid = isRowValid(row);
+        return <span className={valid ? 'text-slate-400' : 'text-red-400'}>{row._idx + 1}</span>;
+      },
+    },
+    {
+      key: 'email',
+      label: 'Email',
+      render: (_, row) => {
+        const emailBad = !EMAIL_REGEX.test(row.email);
+        return (
+          <input
+            type="email"
+            value={row.email}
+            onChange={(e) => updateCsvRow(row._idx, 'email', e.target.value)}
+            className={`w-full px-2 py-1 border rounded-md focus:outline-none focus:ring-1 text-sm ${emailBad
+              ? 'border-red-300 bg-red-50 text-red-700 focus:ring-red-400'
+              : 'border-slate-200 focus:ring-indigo-500'
+              }`}
+          />
+        );
+      },
+    },
+    {
+      key: 'role',
+      label: 'Role',
+      render: (_, row) => {
+        const roleBad = !VALID_ROLES.includes(row.role);
+        return (
+          <select
+            value={VALID_ROLES.includes(row.role) ? row.role : ''}
+            onChange={(e) => updateCsvRow(row._idx, 'role', e.target.value)}
+            className={`px-2 py-1 border rounded-md focus:outline-none focus:ring-1 text-sm ${roleBad
+              ? 'border-red-300 bg-red-50 text-red-700 focus:ring-red-400'
+              : 'border-slate-200 focus:ring-indigo-500'
+              }`}
+          >
+            {roleBad && <option value="">Invalid: {row.role}</option>}
+            <option value="mentee">Mentee</option>
+            <option value="mentor">Mentor</option>
+          </select>
+        );
+      },
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (_, row) => {
+        const valid = isRowValid(row);
+        const emailBad = !EMAIL_REGEX.test(row.email);
+        const roleBad = !VALID_ROLES.includes(row.role);
+
+        if (valid) {
+          return (
+            <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Valid
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex items-center gap-1 text-xs text-red-600">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            {emailBad && roleBad ? 'Bad email & role' : emailBad ? 'Invalid email' : 'Invalid role'}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      label: '',
+      align: 'right',
+      render: (_, row) => (
+        <button
+          type="button"
+          onClick={() => removeCsvRow(row._idx)}
+          className="text-slate-400 hover:text-red-500 transition-colors"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      ),
+    },
+  ];
+
+  const successColumns: DataTableColumn<{ email: string; role: string; _idx: number }>[] = [
+    { key: 'email', label: 'Email', headerClassName: 'text-emerald-700', cellClassName: 'text-slate-700' },
+    { key: 'role', label: 'Role', headerClassName: 'text-emerald-700', cellClassName: 'capitalize text-slate-600' },
+  ];
+
+  const skippedColumns: DataTableColumn<{ email: string; role: string; reason: string; _idx: number }>[] = [
+    { key: 'email', label: 'Email', headerClassName: 'text-amber-700', cellClassName: 'text-slate-700' },
+    { key: 'role', label: 'Role', headerClassName: 'text-amber-700', cellClassName: 'capitalize text-slate-600' },
+    { key: 'reason', label: 'Reason', headerClassName: 'text-amber-700', cellClassName: 'text-amber-700' },
+  ];
 
   if (loading) {
     return (
@@ -215,79 +314,14 @@ export default function AdminInvitesPage() {
               </div>
             </div>
 
-            <div className="border border-slate-200 rounded-xl overflow-hidden">
-              <div className="max-h-[400px] overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 sticky top-0">
-                    <tr>
-                      <th className="text-left px-4 py-2.5 text-slate-600 font-medium">#</th>
-                      <th className="text-left px-4 py-2.5 text-slate-600 font-medium">Email</th>
-                      <th className="text-left px-4 py-2.5 text-slate-600 font-medium">Role</th>
-                      <th className="text-left px-4 py-2.5 text-slate-600 font-medium">Status</th>
-                      <th className="px-4 py-2.5"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredCsvRows.map((row) => {
-                      const valid = isRowValid(row);
-                      const emailBad = !EMAIL_REGEX.test(row.email);
-                      const roleBad = !VALID_ROLES.includes(row.role);
-
-                      return (
-                        <tr key={row._idx} className={valid ? 'hover:bg-slate-50' : 'bg-red-50'}>
-                          <td className={`px-4 py-2 ${valid ? 'text-slate-400' : 'text-red-400'}`}>{row._idx + 1}</td>
-                          <td className="px-4 py-2">
-                            <input
-                              type="email"
-                              value={row.email}
-                              onChange={(e) => updateCsvRow(row._idx, 'email', e.target.value)}
-                              className={`w-full px-2 py-1 border rounded-md focus:outline-none focus:ring-1 text-sm ${emailBad
-                                ? 'border-red-300 bg-red-50 text-red-700 focus:ring-red-400'
-                                : 'border-slate-200 focus:ring-indigo-500'
-                                }`}
-                            />
-                          </td>
-                          <td className="px-4 py-2">
-                            <select
-                              value={VALID_ROLES.includes(row.role) ? row.role : ''}
-                              onChange={(e) => updateCsvRow(row._idx, 'role', e.target.value)}
-                              className={`px-2 py-1 border rounded-md focus:outline-none focus:ring-1 text-sm ${roleBad
-                                ? 'border-red-300 bg-red-50 text-red-700 focus:ring-red-400'
-                                : 'border-slate-200 focus:ring-indigo-500'
-                                }`}
-                            >
-                              {roleBad && <option value="">Invalid: {row.role}</option>}
-                              <option value="mentee">Mentee</option>
-                              <option value="mentor">Mentor</option>
-                            </select>
-                          </td>
-                          <td className="px-4 py-2">
-                            {valid ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
-                                <CheckCircle2 className="w-3.5 h-3.5" /> Valid
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-xs text-red-600">
-                                <AlertTriangle className="w-3.5 h-3.5" />
-                                {emailBad && roleBad ? 'Bad email & role' : emailBad ? 'Invalid email' : 'Invalid role'}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2 text-right">
-                            <button
-                              type="button"
-                              onClick={() => removeCsvRow(row._idx)}
-                              className="text-slate-400 hover:text-red-500 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            <div className="max-h-[400px] overflow-y-auto border border-slate-200 rounded-xl">
+              <DataTable
+                columns={csvColumns}
+                data={filteredCsvRows}
+                rowKey="_idx"
+                tableClassName="text-sm"
+                className="border-0"
+              />
             </div>
           </div>
         )}
@@ -316,22 +350,13 @@ export default function AdminInvitesPage() {
                   {bulkReport.successfulInvites.length} Successful Invite{bulkReport.successfulInvites.length !== 1 ? 's' : ''}
                 </summary>
                 <div className="max-h-[250px] overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-emerald-50 sticky top-0">
-                      <tr>
-                        <th className="text-left px-4 py-2 text-emerald-700 font-medium">Email</th>
-                        <th className="text-left px-4 py-2 text-emerald-700 font-medium">Role</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-emerald-100">
-                      {bulkReport.successfulInvites.map((inv, i) => (
-                        <tr key={i}>
-                          <td className="px-4 py-2 text-slate-700">{inv.email}</td>
-                          <td className="px-4 py-2 capitalize text-slate-600">{inv.role}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <DataTable
+                    columns={successColumns}
+                    data={bulkReport.successfulInvites.map((inv, i) => ({ ...inv, _idx: i }))}
+                    rowKey="_idx"
+                    tableClassName="text-sm"
+                    className="border-0 rounded-none"
+                  />
                 </div>
               </details>
             )}
@@ -343,24 +368,13 @@ export default function AdminInvitesPage() {
                   {bulkReport.skippedInvites.length} Skipped Row{bulkReport.skippedInvites.length !== 1 ? 's' : ''}
                 </summary>
                 <div className="max-h-[250px] overflow-y-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-amber-50 sticky top-0">
-                      <tr>
-                        <th className="text-left px-4 py-2 text-amber-700 font-medium">Email</th>
-                        <th className="text-left px-4 py-2 text-amber-700 font-medium">Role</th>
-                        <th className="text-left px-4 py-2 text-amber-700 font-medium">Reason</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-amber-100">
-                      {bulkReport.skippedInvites.map((inv, i) => (
-                        <tr key={i}>
-                          <td className="px-4 py-2 text-slate-700">{inv.email}</td>
-                          <td className="px-4 py-2 capitalize text-slate-600">{inv.role}</td>
-                          <td className="px-4 py-2 text-amber-700">{inv.reason}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <DataTable
+                    columns={skippedColumns}
+                    data={bulkReport.skippedInvites.map((inv, i) => ({ ...inv, _idx: i }))}
+                    rowKey="_idx"
+                    tableClassName="text-sm"
+                    className="border-0 rounded-none"
+                  />
                 </div>
               </details>
             )}
