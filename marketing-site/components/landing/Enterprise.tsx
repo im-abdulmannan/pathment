@@ -39,7 +39,7 @@ export function Enterprise() {
             return (
               <div
                 key={pillar.title}
-                className="rounded-lg border border-zinc-100 bg-[#fcfcfd] p-6"
+                className="rounded-2xl border border-zinc-100 bg-[#fcfcfd] p-7 transition-colors duration-200 hover:border-zinc-200 hover:bg-white"
               >
                 <div className="mb-4 flex items-center gap-2">
                   <Icon className="h-5 w-5 text-zinc-900" />

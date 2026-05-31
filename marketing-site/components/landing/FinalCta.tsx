@@ -17,20 +17,21 @@ export function FinalCta() {
             <form
               action="mailto:enterprise@pathment.com"
               method="post"
-              className="mx-auto flex max-w-md flex-col items-stretch justify-center gap-3 sm:flex-row"
+              className="mx-auto flex w-full max-w-md flex-col gap-2.5 sm:flex-row"
             >
               <input
                 type="email"
                 name="email"
                 placeholder="Enter work email"
                 required
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-950"
+                className="w-full flex-1 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 shadow-sm-soft transition-all placeholder:text-zinc-400 focus:border-brand-300 focus:outline-none focus:ring-4 focus:ring-brand-500/10"
               />
               <button
                 type="submit"
-                className="flex items-center justify-center gap-1.5 rounded-lg bg-zinc-950 px-5 py-2.5 text-sm font-semibold text-white shadow-md-soft transition-all hover:bg-zinc-800"
+                className="group inline-flex items-center justify-center gap-1.5 rounded-xl bg-zinc-950 px-6 py-3 text-sm font-semibold text-white shadow-md-soft transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-lg-soft"
               >
-                Request Invite <ArrowRight className="h-4 w-4" />
+                Request Invite
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
               </button>
             </form>
             <p className="mt-4 text-xs text-zinc-400">

@@ -21,7 +21,7 @@ export function Capabilities() {
         </div>
 
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-8 shadow-sm-soft md:col-span-2">
+          <div className="flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm-soft transition-all duration-200 hover:border-zinc-300 hover:shadow-md-soft md:col-span-2">
             <div>
               <span className="mb-6 flex h-9 w-9 items-center justify-center rounded border border-brand-100 bg-brand-50 text-brand-600">
                 <Users className="h-5 w-5" />
@@ -49,7 +49,7 @@ export function Capabilities() {
             </div>
           </div>
 
-          <div className="flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-8 shadow-sm-soft">
+          <div className="flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm-soft transition-all duration-200 hover:border-zinc-300 hover:shadow-md-soft">
             <div>
               <span className="mb-6 flex h-9 w-9 items-center justify-center rounded border border-zinc-200 bg-zinc-100 text-zinc-700">
                 <GitBranch className="h-5 w-5" />
@@ -68,7 +68,7 @@ export function Capabilities() {
             </div>
           </div>
 
-          <div className="flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-8 shadow-sm-soft">
+          <div className="flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm-soft transition-all duration-200 hover:border-zinc-300 hover:shadow-md-soft">
             <div>
               <span className="mb-6 flex h-9 w-9 items-center justify-center rounded border border-zinc-200 bg-zinc-100 text-zinc-700">
                 <Sparkles className="h-5 w-5" />
@@ -87,7 +87,7 @@ export function Capabilities() {
             </div>
           </div>
 
-          <div className="flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-8 shadow-sm-soft md:col-span-2">
+          <div className="flex flex-col justify-between rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm-soft transition-all duration-200 hover:border-zinc-300 hover:shadow-md-soft md:col-span-2">
             <div>
               <span className="mb-6 flex h-9 w-9 items-center justify-center rounded border border-zinc-200 bg-zinc-100 text-zinc-700">
                 <Trophy className="h-5 w-5" />

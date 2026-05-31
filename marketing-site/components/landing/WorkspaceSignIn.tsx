@@ -76,7 +76,7 @@ export function WorkspaceSignIn() {
             Enter your workspace name to continue to your team&apos;s sign-in page.
           </p>
           <form onSubmit={handleSubmit} className="space-y-2.5">
-            <div className="flex items-stretch overflow-hidden rounded-lg border border-zinc-300 focus-within:ring-2 focus-within:ring-zinc-950">
+            <div className="flex items-stretch overflow-hidden rounded-xl border border-zinc-200 transition-all focus-within:border-brand-300 focus-within:ring-4 focus-within:ring-brand-500/10">
               <input
                 ref={inputRef}
                 type="text"
@@ -85,16 +85,16 @@ export function WorkspaceSignIn() {
                 placeholder="your-workspace"
                 autoComplete="off"
                 spellCheck={false}
-                className="min-w-0 flex-1 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none"
+                className="min-w-0 flex-1 bg-white px-3.5 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
               />
-              <span className="flex items-center bg-zinc-50 px-2.5 text-xs font-medium text-zinc-500">
+              <span className="flex items-center bg-zinc-50 px-3 text-xs font-medium text-zinc-500">
                 .{ROOT_DOMAIN}
               </span>
             </div>
             <button
               type="submit"
               disabled={!slug}
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-950 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-zinc-800 enabled:hover:-translate-y-0.5 enabled:hover:shadow-md-soft disabled:cursor-not-allowed disabled:opacity-40"
             >
               Continue <ArrowRight className="h-4 w-4" />
             </button>

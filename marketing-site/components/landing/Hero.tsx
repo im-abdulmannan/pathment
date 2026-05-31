@@ -1,4 +1,13 @@
-import { Check, GitBranch, LayoutDashboard, LineChart, Sparkles, Trophy, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  Check,
+  GitBranch,
+  LayoutDashboard,
+  LineChart,
+  Sparkles,
+  Trophy,
+  Users,
+} from 'lucide-react';
 import { heroHighlights } from './content';
 
 export function Hero() {
@@ -15,7 +24,7 @@ export function Hero() {
             <span className="flex h-1.5 w-1.5 rounded-full bg-brand-500" />
             AI-POWERED MENTORSHIP INFRASTRUCTURE
           </div>
-          <h1 className="mb-6 text-balance font-display text-4xl leading-[1.08] font-semibold tracking-tight text-zinc-950 sm:text-6xl">
+          <h1 className="mb-6 text-balance font-display text-[2.75rem] leading-[1.04] font-semibold tracking-tight text-zinc-950 sm:text-6xl">
             Structured growth, <br className="hidden sm:inline" />
             <span className="font-normal italic text-zinc-500">at enterprise scale.</span>
           </h1>
@@ -24,16 +33,17 @@ export function Hero() {
             development through smart mentor matching, AI-generated roadmaps, and gamified,
             verifiable progress.
           </p>
-          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <a
               href="#request-access"
-              className="inline-flex w-full items-center justify-center rounded-lg bg-zinc-950 px-5 py-3 text-sm font-semibold text-white shadow-md-soft transition-all hover:bg-zinc-800 sm:w-auto"
+              className="group inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-zinc-950 px-6 py-3.5 text-sm font-semibold text-white shadow-md-soft transition-all duration-200 hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-lg-soft sm:w-auto"
             >
               Request Access
+              <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
             </a>
             <a
               href="#how-it-works"
-              className="inline-flex w-full items-center justify-center rounded-lg border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-700 transition-all hover:bg-zinc-50 hover:text-zinc-950 sm:w-auto"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 py-3.5 text-sm font-semibold text-zinc-700 shadow-sm-soft transition-all duration-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:text-zinc-950 sm:w-auto"
             >
               See How It Works
             </a>
