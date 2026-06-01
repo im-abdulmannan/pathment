@@ -11,6 +11,7 @@ export const submissionService = {
     extensionReason?: string;
     extensionDays?: number;
     files?: File[];
+    timeSpentHours?: number;
   }) {
     const formData = new FormData();
     formData.append('submissionText', data.submissionText);
@@ -19,6 +20,10 @@ export const submissionService = {
       data.submissionUrls.forEach(url => {
         formData.append('submissionUrls[]', url);
       });
+    }
+
+    if (data.timeSpentHours !== undefined && data.timeSpentHours > 0) {
+      formData.append('timeSpentHours', data.timeSpentHours.toString());
     }
 
     if (data.extensionRequested) {

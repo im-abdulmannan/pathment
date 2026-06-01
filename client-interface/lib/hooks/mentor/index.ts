@@ -2,6 +2,9 @@
 export { useMentorDashboard } from './useMentorDashboard';
 export type { UseMentorDashboardReturn } from './useMentorDashboard';
 
+export { useMenteeActivity } from './useMenteeActivity';
+export type { UseMenteeActivityReturn } from './useMenteeActivity';
+
 export { useMentorMentees } from './useMentorMentees';
 export type { UseMentorMenteesReturn } from './useMentorMentees';
 

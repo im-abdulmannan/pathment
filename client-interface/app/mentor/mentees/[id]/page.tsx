@@ -21,7 +21,9 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useMenteeDetailPage } from '@/lib/hooks/mentor';
+import { useMenteeActivity } from '@/lib/hooks/mentor/useMenteeActivity';
 import { PageHeader, StatsCard, ProgressBar, StatusBadge } from '@/components/admin/ui';
+import { ActivityCard } from '@/components/shared/ActivityCard';
 
 export default function MenteeDetail() {
   const params = useParams();
@@ -42,6 +44,16 @@ export default function MenteeDetail() {
     handleApproveCompletion,
     handleRejectCompletion,
   } = useMenteeDetailPage(menteeId);
+
+  const {
+    summary: actSummary,
+    dailySessions: actSessions,
+    recentEvents: actEvents,
+    loading: actLoading,
+    days: actDays,
+    setDays: setActDays,
+    refetch: refetchActivity,
+  } = useMenteeActivity(menteeId);
 
   if (loading) {
     return (
@@ -471,6 +483,18 @@ export default function MenteeDetail() {
               </button>
             </div>
           </div>
+
+          {/* Activity */}
+          <ActivityCard
+            summary={actSummary}
+            dailySessions={actSessions}
+            recentEvents={actEvents}
+            loading={actLoading}
+            days={actDays}
+            onDaysChange={setActDays}
+            onRefresh={refetchActivity}
+            compact
+          />
         </div>
       </div>
     </div>

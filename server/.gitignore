@@ -1,9 +1,11 @@
 node_modules/
 .env
 .env.local
+.env.test
 .DS_Store
 logs/
 npm-debug.log*
 sequelizerc
 /.idea
 /.vscode
+.env.test

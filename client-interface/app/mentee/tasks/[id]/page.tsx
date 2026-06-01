@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CheckCircle2,
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useTaskDetail } from '@/lib/hooks/mentee';
 import { PageHeader, StatusBadge } from '@/components/admin/ui';
+import { useActivityTracker } from '@/lib/hooks/shared/useActivityTracker';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -30,6 +31,17 @@ export default function TaskDetailsPage({ params }: PageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
   const { task, loading, error } = useTaskDetail(resolvedParams.id);
+  const { trackEvent } = useActivityTracker();
+
+  useEffect(() => {
+    if (task?.id) {
+      trackEvent('task_opened', {
+        eventCategory: 'task',
+        entityType: 'task',
+        entityId: task.id,
+      });
+    }
+  }, [task?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (

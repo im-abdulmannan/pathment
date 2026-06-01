@@ -13,9 +13,10 @@ import {
   Star,
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
-import { useMenteeDashboard } from '@/lib/hooks/mentee';
+import { useMenteeDashboard, useMyActivity } from '@/lib/hooks/mentee';
 import { ProgressBar, StatusBadge } from '@/components/admin/ui';
 import { RateMentorModal } from '@/components/mentee/dashboard';
+import { ActivityCard } from '@/components/shared/ActivityCard';
 
 export default function MenteeDashboard() {
   const { user } = useAuth();
@@ -38,6 +39,16 @@ export default function MenteeDashboard() {
     ratedEnrollmentIds,
   } = useMenteeDashboard();
 
+  const {
+    summary: actSummary,
+    dailySessions: actSessions,
+    recentEvents: actEvents,
+    loading: actLoading,
+    days: actDays,
+    setDays: setActDays,
+    refetch: refetchActivity,
+  } = useMyActivity();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -45,6 +56,17 @@ export default function MenteeDashboard() {
         <h1 className="text-slate-900 mb-2">Welcome back{user?.profile?.firstName ? `, ${user.profile.firstName}` : ''}!</h1>
         <p className="text-slate-600">Keep up the great work on your learning journey</p>
       </div>
+
+      {/* Activity self-view */}
+      <ActivityCard
+        summary={actSummary}
+        dailySessions={actSessions}
+        recentEvents={actEvents}
+        loading={actLoading}
+        days={actDays}
+        onDaysChange={setActDays}
+        onRefresh={refetchActivity}
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-12">

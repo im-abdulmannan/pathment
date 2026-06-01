@@ -1,6 +1,9 @@
 export { useMenteeDashboard } from './useMenteeDashboard';
 export type { UseMenteeDashboardReturn } from './useMenteeDashboard';
 
+export { useMyActivity } from './useMyActivity';
+export type { UseMyActivityReturn } from './useMyActivity';
+
 export { useMenteePrograms } from './useMenteePrograms';
 export type { UseMenteeProgramsReturn } from './useMenteePrograms';
 

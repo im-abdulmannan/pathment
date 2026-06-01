@@ -14,6 +14,7 @@ const uploadToCloudinary = (fileBuffer, folder = 'pathment/submissions', resourc
       {
         folder: folder,
         resource_type: resourceType,
+        type: 'upload',         // explicit public delivery
         use_filename: true,
         unique_filename: true
       },
@@ -40,7 +41,7 @@ const uploadToCloudinary = (fileBuffer, folder = 'pathment/submissions', resourc
  * @param {string} resourceType - Type of resource (image, video, raw)
  * @returns {Promise<Object>} Cloudinary deletion result
  */
-const deleteFromCloudinary = async (publicId, resourceType = 'auto') => {
+const deleteFromCloudinary = async (publicId, resourceType = 'image') => {
   try {
     const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType

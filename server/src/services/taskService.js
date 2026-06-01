@@ -444,13 +444,21 @@ class TaskService {
     });
 
     // Update task status
-    await task.update({
+    const taskUpdate = {
       status: 'submitted',
       submittedAt: new Date(),
       currentSubmissionVersion: version,
       startedAt: task.startedAt || new Date(),
       isLate: task.dueDate && new Date() > new Date(task.dueDate)
-    });
+    };
+
+    // Accumulate self-reported work hours across resubmissions
+    if (submissionData.timeSpentHours && Number(submissionData.timeSpentHours) > 0) {
+      const existing = parseFloat(task.timeSpentHours) || 0;
+      taskUpdate.timeSpentHours = existing + Number(submissionData.timeSpentHours);
+    }
+
+    await task.update(taskUpdate);
 
     return this.getAssignedTaskById(taskId);
   }

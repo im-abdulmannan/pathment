@@ -5,3 +5,4 @@ export * from './roadmap';
 export * from './task';
 export * from './enrollment';
 export * from './common';
+export * from './activity';

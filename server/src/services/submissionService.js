@@ -24,14 +24,31 @@ class SubmissionService {
     }
 
     // Upload files to Cloudinary
+    // PDFs and documents must use 'raw' so Cloudinary delivers them via
+    // /raw/upload/ — using 'auto' maps PDFs to the image pipeline
+    // (/image/upload/) which requires signing and returns 401.
+    const getCloudinaryResourceType = (mimetype) => {
+      if (mimetype.startsWith('video/')) return 'video';
+      if (mimetype.startsWith('image/')) return 'image';
+      return 'raw'; // application/pdf and all other document types
+    };
+
     const uploadedFiles = [];
     for (const file of files) {
       try {
+        const resourceType = getCloudinaryResourceType(file.mimetype);
         const result = await uploadToCloudinary(
           file.buffer,
           `pathment/submissions/${taskId}`,
-          'auto'
+          resourceType
         );
+        console.log('[Cloudinary] upload result:', {
+          public_id: result.public_id,
+          secure_url: result.secure_url,
+          resource_type: result.resource_type,
+          type: result.type,
+          access_mode: result.access_mode
+        });
 
         uploadedFiles.push({
           fileName: file.originalname,
@@ -505,9 +522,17 @@ class SubmissionService {
     }
 
     // Delete from Cloudinary
+    // Extract the full public_id from the URL: everything after /upload/v<ver>/
+    // e.g. /raw/upload/v123/pathment/submissions/<id>/file_xxx.pdf → pathment/submissions/<id>/file_xxx
     try {
-      const publicId = file.fileUrl.split('/').slice(-2).join('/').split('.')[0];
-      await deleteFromCloudinary(`pathment/submissions/${task.id}/${publicId}`);
+      const urlParts = file.fileUrl.split('/');
+      const uploadIdx = urlParts.indexOf('upload');
+      const publicIdWithExt = urlParts.slice(uploadIdx + 2).join('/');
+      const publicId = publicIdWithExt.replace(/\.[^/.]+$/, '');
+      const cloudinaryResourceType = (file.fileType || '').startsWith('video/') ? 'video'
+        : (file.fileType || '').startsWith('image/') ? 'image'
+        : 'raw';
+      await deleteFromCloudinary(publicId, cloudinaryResourceType);
     } catch (error) {
       console.error('Error deleting from Cloudinary:', error);
     }

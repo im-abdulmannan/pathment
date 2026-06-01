@@ -70,3 +70,6 @@ export type {
   CsvRow,
   BulkReport,
 } from './useInvites';
+
+export { useAdminActivity } from './useAdminActivity';
+export type { UseAdminActivityReturn } from './useAdminActivity';

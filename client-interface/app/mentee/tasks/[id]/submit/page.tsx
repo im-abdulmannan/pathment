@@ -16,6 +16,7 @@ import { submissionService } from '@/lib/services/submissionService';
 import { useTaskDetail } from '@/lib/hooks/mentee';
 import { PageHeader } from '@/components/admin/ui';
 import { extractApiErrorMessage } from '@/lib/utils/api-error';
+import { useActivityTracker } from '@/lib/hooks/shared/useActivityTracker';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -26,10 +27,12 @@ export default function TaskSubmission({ params }: PageProps) {
   const router = useRouter();
 
   const { task, loading, error: taskError } = useTaskDetail(resolvedParams.id);
+  const { trackEvent } = useActivityTracker();
 
   const [submissionText, setSubmissionText] = useState('');
   const [links, setLinks] = useState<string[]>(['']);
   const [files, setFiles] = useState<File[]>([]);
+  const [timeSpentHours, setTimeSpentHours] = useState<string>('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [showExtensionForm, setShowExtensionForm] = useState(false);
   const [extensionDays, setExtensionDays] = useState(3);
@@ -84,7 +87,14 @@ export default function TaskSubmission({ params }: PageProps) {
         submissionText,
         submissionUrls: validLinks,
         files,
-        extensionRequested: false
+        extensionRequested: false,
+        timeSpentHours: timeSpentHours ? parseFloat(timeSpentHours) : undefined,
+      });
+
+      trackEvent('submission_completed', {
+        eventCategory: 'submission',
+        entityType: 'task',
+        entityId: resolvedParams.id,
       });
 
       setShowSuccess(true);
@@ -109,6 +119,12 @@ export default function TaskSubmission({ params }: PageProps) {
       await submissionService.requestExtension(resolvedParams.id, {
         reason: extensionReason,
         days: extensionDays
+      });
+
+      trackEvent('extension_requested', {
+        eventCategory: 'task',
+        entityType: 'task',
+        entityId: resolvedParams.id,
       });
 
       setShowSuccess(true);
@@ -309,6 +325,30 @@ export default function TaskSubmission({ params }: PageProps) {
                   >
                     + Add another link
                   </button>
+                </div>
+              </div>
+
+              {/* Time spent */}
+              <div className="mb-6">
+                <label className="block text-sm text-slate-700 mb-2">
+                  Time spent on this task
+                  <span className="ml-1.5 text-slate-400 font-normal">(optional — helps your mentor understand your effort)</span>
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="relative w-40">
+                    <Clock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                    <input
+                      type="number"
+                      min="0.5"
+                      max="200"
+                      step="0.5"
+                      value={timeSpentHours}
+                      onChange={(e) => setTimeSpentHours(e.target.value)}
+                      placeholder="e.g. 3"
+                      className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <span className="text-sm text-slate-500">hours</span>
                 </div>
               </div>
 

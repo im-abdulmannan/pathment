@@ -1,0 +1,65 @@
+const express = require('express');
+const router = express.Router();
+const { authenticate, authorize } = require('../middlewares/auth');
+const { verifyAccessToken } = require('../utils/jwt');
+const { models } = require('../db');
+const {
+  startSession,
+  heartbeat,
+  endSession,
+  logEvent,
+  logPageView,
+  getMySummary,
+  getMenteeSummary,
+  getAdminOverview,
+} = require('../controllers/activityController');
+
+// ─── Beacon-compatible heartbeat (must be BEFORE router.use(authenticate)) ───
+// sendBeacon cannot set Authorization headers, so we accept token in body.
+router.post('/session/heartbeat', async (req, res, next) => {
+  // Try standard Bearer token first
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authenticate(req, res, () => heartbeat(req, res, next));
+  }
+  // Beacon fallback: token in body
+  const bodyToken = req.body?._token;
+  if (!bodyToken) {
+    console.warn('[ACTIVITY] heartbeat: no auth token (header or body)');
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+  try {
+    const decoded = verifyAccessToken(bodyToken);
+    const user = await models.User.findByPk(decoded.id, { attributes: { exclude: ['password'] } });
+    if (!user || user.status !== 'active') {
+      return res.status(401).json({ success: false, message: 'Invalid token' });
+    }
+    req.user = user;
+    return heartbeat(req, res, next);
+  } catch (err) {
+    console.warn('[ACTIVITY] heartbeat beacon auth failed', err.message);
+    return res.status(401).json({ success: false, message: 'Invalid token' });
+  }
+});
+
+// All other activity routes require standard authentication
+router.use(authenticate);
+
+// ─── Session lifecycle ───────────────────────────────────────────────────────
+router.post('/session/start', startSession);
+router.post('/session/end', endSession);
+
+// ─── Event & page-view logging ───────────────────────────────────────────────
+router.post('/event', logEvent);
+router.post('/page-view', logPageView);
+
+// ─── Summaries ───────────────────────────────────────────────────────────────
+router.get('/me/summary', getMySummary);
+
+// Mentor or Admin can view a mentee's activity
+router.get('/mentee/:id/summary', authorize(['mentor', 'admin']), getMenteeSummary);
+
+// Admin-only aggregate overview
+router.get('/admin/overview', authorize(['admin']), getAdminOverview);
+
+module.exports = router;

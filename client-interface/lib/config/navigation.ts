@@ -10,6 +10,7 @@ import {
   Settings,
   GraduationCap,
   School,
+  BarChart2,
   type LucideIcon
 } from 'lucide-react';
 import { UserRole } from '@/lib/types';
@@ -46,6 +47,7 @@ export const navigationConfig: Record<string, NavLink[]> = {
       ],
     },
     { path: '/admin/messages', icon: MessageSquare, label: 'Messages', hasBadge: true },
+    { path: '/admin/activity', icon: BarChart2, label: 'Activity' },
     { path: '/admin/settings', icon: Settings, label: 'Settings' },
   ],
   mentor: [

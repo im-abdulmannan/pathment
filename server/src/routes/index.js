@@ -17,6 +17,7 @@ const profileRoutes = require('./profile');
 const skillRoutes = require('./skills');
 const messagingRoutes = require('./messaging');
 const gamificationRoutes = require('./gamification');
+const activityRoutes = require('./activity');
 
 /**
  * API Routes
@@ -69,6 +70,9 @@ router.use('/messaging', messagingRoutes);
 
 // Gamification routes
 router.use('/gamification', gamificationRoutes);
+
+// Activity tracking routes
+router.use('/activity', activityRoutes);
 
 // Level mentor assignment routes
 router.use('/', levelMentorRoutes);
