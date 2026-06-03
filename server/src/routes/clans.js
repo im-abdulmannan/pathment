@@ -9,6 +9,9 @@ router.get('/me/memberships', authenticate, clanController.myMemberships);
 // List clans (any authenticated user; filterable by program/status).
 router.get('/', authenticate, clanController.listClans);
 
+// Org-wide clan-health snapshot grouped by program (admin dashboard).
+router.get('/health', authenticate, authorize(['admin']), clanController.clanHealth);
+
 // Clan detail.
 router.get('/:id', authenticate, clanController.getClan);
 

@@ -4,6 +4,8 @@ import { apiClient } from './api-client';
 export const clanApi = {
   list: (programId?: string, status?: string) =>
     apiClient.get('/clans', { params: { programId, status } }),
+  /** Org-wide clan-health snapshot grouped by program (admin dashboard). */
+  health: () => apiClient.get('/clans/health'),
   get: (id: string) => apiClient.get(`/clans/${id}`),
   create: (data: {
     programId: string;

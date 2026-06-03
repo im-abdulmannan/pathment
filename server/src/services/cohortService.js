@@ -182,9 +182,7 @@ class CohortService {
     const lastActiveDays = daysSince(lastActivityDate);
 
     const week = enrollment?.currentWeek || 0;
-    const totalWeeks = enrollment?.currentLevel?.durationWeeks
-      || enrollment?.program?.totalDurationWeeks
-      || 0;
+    const totalWeeks = enrollment?.program?.totalDurationWeeks || 0;
     const expected = totalWeeks ? clamp(Math.round((week / totalWeeks) * 100), 0, 100) : null;
 
     const relativeProgress = this.computeRelativeProgress(absolute, delays);
@@ -201,7 +199,7 @@ class CohortService {
       email: mentee.email,
       profilePictureUrl: mentee.profilePictureUrl || null,
       program: enrollment?.program?.name || '—',
-      level: enrollment?.currentLevel?.name || '—',
+      level: '—',
       week,
       totalWeeks,
       absoluteProgress: absolute,

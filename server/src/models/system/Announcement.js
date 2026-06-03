@@ -22,11 +22,17 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       field: 'author_id'
     },
-    // 'all' or a programId.
+    // Audience TYPE: 'all' | 'mentors' | 'mentees' | 'program' | 'clan'.
     audience: {
-      type: DataTypes.STRING(60),
+      type: DataTypes.STRING(20),
       allowNull: false,
       defaultValue: 'all'
+    },
+    // For 'program' / 'clan' audiences: the target program or clan id.
+    audienceId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'audience_id'
     },
     pinned: {
       type: DataTypes.BOOLEAN,

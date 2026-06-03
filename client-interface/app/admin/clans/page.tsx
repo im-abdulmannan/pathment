@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Users2, Plus, X, Loader2, Trash2, UserPlus, Crown, GraduationCap } from 'lucide-react';
 import { useAdminClans, type Clan } from '@/lib/hooks/admin';
@@ -193,13 +194,20 @@ function ClanDrawer({ clanId, mentors, mentees, onClose, onChanged }: {
   );
 }
 
-export default function AdminClans() {
+function AdminClansInner() {
   const { clans, loading, error, refetch } = useAdminClans();
+  const searchParams = useSearchParams();
   const [programs, setPrograms] = useState<any[]>([]);
   const [mentors, setMentors] = useState<Person[]>([]);
   const [mentees, setMentees] = useState<Person[]>([]);
   const [creating, setCreating] = useState(false);
   const [openClan, setOpenClan] = useState<string | null>(null);
+
+  // Deep-link support: /admin/clans?clan=<id> opens that clan's drawer.
+  useEffect(() => {
+    const id = searchParams.get('clan');
+    if (id) setOpenClan(id);
+  }, [searchParams]);
 
   useEffect(() => {
     programsApi.getAll().then((r: any) => setPrograms(Array.isArray(r?.data) ? r.data : (r?.data?.programs ?? []))).catch(() => {});
@@ -272,5 +280,13 @@ export default function AdminClans() {
       {creating && <CreateClanModal programs={programs} mentors={mentors} onClose={() => setCreating(false)} onCreated={refetch} />}
       {openClan && <ClanDrawer clanId={openClan} mentors={mentors} mentees={mentees} onClose={() => setOpenClan(null)} onChanged={refetch} />}
     </div>
+  );
+}
+
+export default function AdminClans() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>}>
+      <AdminClansInner />
+    </Suspense>
   );
 }

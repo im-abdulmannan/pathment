@@ -4,6 +4,16 @@ export type { Enrollment, EnrollmentStatus } from './useEnrollmentList';
 export { useAdminClans } from './useAdminClans';
 export type { UseAdminClansReturn, Clan, ClanMembershipRow } from './useAdminClans';
 
+export { useClanHealth } from './useClanHealth';
+export type {
+  UseClanHealthReturn,
+  ClanHealthCard,
+  ClanHealthKpis,
+  ProgramHealth,
+  AtRiskMentee,
+  ClanStatus,
+} from './useClanHealth';
+
 export { useAnnouncements } from './useAnnouncements';
 export type { UseAnnouncementsReturn, Announcement } from './useAnnouncements';
 

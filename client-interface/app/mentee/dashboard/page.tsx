@@ -20,6 +20,7 @@ import { ProgressBar, StatusBadge } from '@/components/admin/ui';
 import { RateMentorModal } from '@/components/mentee/dashboard';
 import { ActivityCard } from '@/components/shared/ActivityCard';
 import { RecurringRitualsCard } from '@/components/mentee/RecurringRitualsCard';
+import { AnnouncementsCard } from '@/components/shared/AnnouncementsCard';
 
 export default function MenteeDashboard() {
   const { user } = useAuth();
@@ -109,6 +110,9 @@ export default function MenteeDashboard() {
 
       {/* Recurring rituals (from your schedule) */}
       <RecurringRitualsCard />
+
+      {/* Latest announcements */}
+      <AnnouncementsCard href="/mentee/announcements" />
 
       {/* This week's tasks */}
       {weekTasks.length > 0 && (

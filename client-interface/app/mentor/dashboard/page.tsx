@@ -11,6 +11,7 @@ import { useMentorCohort, type CohortMentee, type CohortRisk, type CohortMomentu
 import { StatsCard } from '@/components/admin/ui';
 import { DualProgress } from '@/components/mentor/DualProgress';
 import { AssignTaskDrawer } from '@/components/mentor/AssignTaskDrawer';
+import { AnnouncementsCard } from '@/components/shared/AnnouncementsCard';
 
 type Filter = 'all' | 'attention' | 'review' | 'risk' | 'going_well';
 
@@ -173,6 +174,9 @@ export default function MentorCockpit() {
         <StatsCard icon={Flag} label="Open blockers" value={totals?.openBlockers ?? '…'} colorClass="text-amber-600 bg-amber-50" />
         <StatsCard icon={Users} label="Cohort on-time" value={totals ? `${totals.onTimeRate}%` : '…'} colorClass="text-emerald-600 bg-emerald-50" />
       </div>
+
+      {/* Latest announcements */}
+      <AnnouncementsCard href="/mentor/announcements" />
 
       {/* Filter tabs */}
       <div className="flex flex-wrap items-center gap-0 border-b border-slate-200">

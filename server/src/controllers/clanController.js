@@ -1,6 +1,16 @@
 const { catchAsync } = require('../middlewares/errorHandler');
 const { successResponse } = require('../utils/responses');
 const clanService = require('../services/clanService');
+const clanHealthService = require('../services/clanHealthService');
+
+/**
+ * GET /api/clans/health  (admin)
+ * Org-wide clan-health snapshot grouped by program for the admin dashboard.
+ */
+const clanHealth = catchAsync(async (req, res) => {
+  const health = await clanHealthService.programHealth();
+  res.status(200).json(successResponse('Clan health retrieved', health));
+});
 
 /**
  * GET /api/clans
@@ -64,6 +74,7 @@ const removeMember = catchAsync(async (req, res) => {
 
 module.exports = {
   listClans,
+  clanHealth,
   myMemberships,
   getClan,
   createClan,

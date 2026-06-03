@@ -3,17 +3,17 @@ const { successResponse } = require('../utils/responses');
 const announcementService = require('../services/announcementService');
 
 const list = catchAsync(async (req, res) => {
-  const announcements = await announcementService.list(req.user.id, { audience: req.query.audience });
+  const announcements = await announcementService.list(req.user);
   res.status(200).json(successResponse('Announcements retrieved', { announcements }));
 });
 
 const create = catchAsync(async (req, res) => {
-  const announcement = await announcementService.create(req.body, req.user.id);
+  const announcement = await announcementService.create(req.body, req.user);
   res.status(201).json(successResponse('Announcement posted', { announcement }, 201));
 });
 
 const togglePin = catchAsync(async (req, res) => {
-  const announcement = await announcementService.togglePin(req.params.id);
+  const announcement = await announcementService.togglePin(req.params.id, req.user);
   res.status(200).json(successResponse('Pin toggled', { announcement }));
 });
 
@@ -23,8 +23,14 @@ const react = catchAsync(async (req, res) => {
 });
 
 const remove = catchAsync(async (req, res) => {
-  const result = await announcementService.remove(req.params.id);
+  const result = await announcementService.remove(req.params.id, req.user);
   res.status(200).json(successResponse('Announcement removed', result));
 });
 
-module.exports = { list, create, togglePin, react, remove };
+// Clans the logged-in mentor leads (for the compose dropdown).
+const myLedClans = catchAsync(async (req, res) => {
+  const clans = await announcementService.ledClans(req.user.id);
+  res.status(200).json(successResponse('Led clans retrieved', { clans }));
+});
+
+module.exports = { list, create, togglePin, react, remove, myLedClans };
