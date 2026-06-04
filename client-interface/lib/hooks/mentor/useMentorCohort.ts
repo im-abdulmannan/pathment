@@ -25,6 +25,7 @@ export interface CohortMentee {
   avgRating: number;
   lastActive: string;
   sentiment: string;
+  clan?: { id: string; name: string } | null;
 }
 
 export interface CohortTotals {

@@ -65,6 +65,17 @@ module.exports = (sequelize, DataTypes) => {
     phone: {
       type: DataTypes.STRING(20)
     },
+    city: {
+      type: DataTypes.STRING(120)
+    },
+    country: {
+      type: DataTypes.STRING(120)
+    },
+    languages: {
+      type: DataTypes.ARRAY(DataTypes.TEXT),
+      allowNull: false,
+      defaultValue: []
+    },
     emailVerified: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

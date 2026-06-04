@@ -41,6 +41,11 @@ module.exports = (sequelize, DataTypes) => {
       field: 'github_url',
       allowNull: true
     },
+    portfolioUrl: {
+      type: DataTypes.STRING(255),
+      field: 'portfolio_url',
+      allowNull: true
+    },
     priorExperience: {
       type: DataTypes.TEXT,
       field: 'prior_experience'

@@ -1,10 +1,12 @@
 'use client';
 
-import { Loader2, Save, User, Mail, Phone, Briefcase, Users, Bell, Shield, CheckCircle2, KeyRound } from 'lucide-react';
+import { Loader2, Save, User, Briefcase, Users, Bell, Shield, KeyRound, Sparkles } from 'lucide-react';
 import { useMentorSettings } from '@/lib/hooks/mentor';
 import { PageHeader, TabBar } from '@/components/admin/ui';
 import SecurityTab from '@/components/shared/SecurityTab';
 import AIConnectionsTab from '@/components/settings/AIConnectionsTab';
+import { LocationDetailsFields } from '@/components/settings/LocationDetailsFields';
+import { SkillsTab } from '@/components/settings/SkillsTab';
 import type { Tab } from '@/components/admin/ui';
 
 export default function MentorSettings() {
@@ -38,6 +40,7 @@ export default function MentorSettings() {
   const tabs: Tab[] = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'mentor', label: 'Mentor Info', icon: Briefcase },
+    { id: 'skills', label: 'Skills', icon: Sparkles },
     { id: 'availability', label: 'Availability', icon: Users },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'ai', label: 'AI Connections', icon: KeyRound },
@@ -117,6 +120,13 @@ export default function MentorSettings() {
                 />
               </div>
 
+              <div className="pt-6 border-t border-slate-100">
+                <LocationDetailsFields
+                  value={{ city: profileData.city, country: profileData.country, languages: profileData.languages, timezone: profileData.timezone }}
+                  onChange={(patch) => setProfileData({ ...profileData, ...patch })}
+                />
+              </div>
+
               <button
                 onClick={handleProfileUpdate}
                 disabled={saving}
@@ -126,6 +136,11 @@ export default function MentorSettings() {
                 Save Changes
               </button>
             </div>
+          )}
+
+          {/* Skills Tab */}
+          {activeTab === 'skills' && (
+            <SkillsTab blurb="Add the skills you bring as a mentor, with how strong you are at each. Mentees and admins see these on your profile." />
           )}
 
           {/* Mentor Info Tab */}

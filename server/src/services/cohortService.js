@@ -441,6 +441,28 @@ class CohortService {
     const rows = await Promise.all(menteeIds.map((id) => this.buildMenteeRow(id)));
     const cohort = rows.filter(Boolean);
 
+    // Attach the clan each mentee shares with this mentor (for clan-wise
+    // filtering on the My Mentees page). Batched, no per-row queries.
+    const mentorClans = await models.ClanMembership.findAll({
+      where: { userId: mentorId, status: 'active', role: { [Op.in]: ['lead_mentor', 'co_mentor', 'core_team'] } },
+      include: [{ model: models.Clan, as: 'clan', attributes: ['id', 'name'] }],
+    });
+    const clanIds = mentorClans.map((c) => c.clanId);
+    const clanNameById = new Map(mentorClans.map((c) => [c.clanId, c.clan?.name || 'Clan']));
+    if (clanIds.length) {
+      const menteeMemberships = await models.ClanMembership.findAll({
+        where: { clanId: { [Op.in]: clanIds }, status: 'active', role: 'mentee' },
+        attributes: ['userId', 'clanId'],
+      });
+      const clanByMentee = new Map();
+      for (const m of menteeMemberships) {
+        if (!clanByMentee.has(m.userId)) clanByMentee.set(m.userId, { id: m.clanId, name: clanNameById.get(m.clanId) });
+      }
+      cohort.forEach((r) => { r.clan = clanByMentee.get(r.id) || null; });
+    } else {
+      cohort.forEach((r) => { r.clan = null; });
+    }
+
     const totals = {
       mentees: cohort.length,
       pendingApprovals: cohort.reduce((n, m) => n + m.pendingApprovals, 0),

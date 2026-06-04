@@ -14,6 +14,7 @@ import {
 import { useAdminSettings } from '@/lib/hooks/admin';
 import { PageHeader, TabBar } from '@/components/admin/ui';
 import SecurityTab from '@/components/shared/SecurityTab';
+import { LocationDetailsFields } from '@/components/settings/LocationDetailsFields';
 import AIConnectionsTab from '@/components/settings/AIConnectionsTab';
 
 const TABS = [
@@ -169,6 +170,13 @@ export default function AdminSettings() {
                   rows={4}
                   className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   placeholder="Tell us about yourself..."
+                />
+              </div>
+
+              <div className="pt-6 border-t border-slate-100">
+                <LocationDetailsFields
+                  value={{ city: profileData.city, country: profileData.country, languages: profileData.languages, timezone: profileData.timezone }}
+                  onChange={(patch) => setProfileData({ ...profileData, ...patch })}
                 />
               </div>
 

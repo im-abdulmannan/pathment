@@ -28,6 +28,12 @@ class ProfileController {
           model: models.Skill,
           as: 'skills',
           through: { attributes: ['proficiencyLevel', 'yearsOfExperience'] }
+        },
+        {
+          model: models.UserSettings,
+          as: 'settings',
+          required: false,
+          attributes: ['timezone', 'language']
         }
       ]
     });
@@ -247,7 +253,7 @@ await user.update({
    */
   updateProfile = catchAsync(async (req, res) => {
     const userId = req.user.id;
-    const { firstName, lastName, bio, phone, profilePictureUrl } = req.body;
+    const { firstName, lastName, bio, phone, profilePictureUrl, city, country, languages, timezone } = req.body;
 
     const user = await models.User.findByPk(userId);
     if (!user) {
@@ -259,8 +265,19 @@ await user.update({
       lastName: lastName || user.lastName,
       bio: bio !== undefined ? bio : user.bio,
       phone: phone !== undefined ? phone : user.phone,
-      profilePictureUrl: profilePictureUrl !== undefined ? profilePictureUrl : user.profilePictureUrl
+      profilePictureUrl: profilePictureUrl !== undefined ? profilePictureUrl : user.profilePictureUrl,
+      city: city !== undefined ? city : user.city,
+      country: country !== undefined ? country : user.country,
+      languages: Array.isArray(languages)
+        ? languages.map((l) => String(l).trim()).filter(Boolean)
+        : user.languages
     });
+
+    // Timezone lives on user_settings — upsert it so the location form saves in one go.
+    if (timezone !== undefined && timezone !== null && String(timezone).trim()) {
+      const [settings] = await models.UserSettings.findOrCreate({ where: { userId }, defaults: { userId } });
+      await settings.update({ timezone: String(timezone).trim() });
+    }
 
     res.json(successResponse(PROFILE_MESSAGES.PROFILE_UPDATED, user));
   });

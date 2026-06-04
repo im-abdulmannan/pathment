@@ -14,6 +14,10 @@ export interface ProfileData {
   email: string;
   phone: string;
   bio: string;
+  city: string;
+  country: string;
+  languages: string[];
+  timezone: string;
 }
 
 export interface MenteeProfileData {
@@ -72,6 +76,10 @@ export function useMenteeSettings(): UseMenteeSettingsReturn {
     email: '',
     phone: '',
     bio: '',
+    city: '',
+    country: '',
+    languages: [],
+    timezone: '',
   });
 
   const [menteeProfile, setMenteeProfile] = useState<MenteeProfileData>({
@@ -111,6 +119,10 @@ export function useMenteeSettings(): UseMenteeSettingsReturn {
         email:     data.email    || '',
         phone:     data.phone    || '',
         bio:       data.bio      || '',
+        city:      data.city     || '',
+        country:   data.country  || '',
+        languages: Array.isArray(data.languages) ? data.languages : [],
+        timezone:  data.settings?.timezone || '',
       });
 
       if (data.menteeProfile) {

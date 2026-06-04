@@ -76,6 +76,7 @@ export const navigationConfig: Record<string, NavLink[]> = {
   ],
   mentor: [
     { path: '/mentor/dashboard', icon: LayoutDashboard, label: 'Cockpit' },
+    { path: '/mentor/mentees', icon: Users2, label: 'My Mentees' },
     { path: '/mentor/programs', icon: School, label: 'My Programs' },
     { path: '/mentor/review', icon: CalendarRange, label: 'Cohort Review' },
     { path: '/mentor/approvals', icon: ClipboardCheck, label: 'Approvals' },

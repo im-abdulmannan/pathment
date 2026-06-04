@@ -13,6 +13,10 @@ export interface ProfileData {
   email: string;
   phone: string;
   bio: string;
+  city: string;
+  country: string;
+  languages: string[];
+  timezone: string;
 }
 
 export interface SystemSettings {
@@ -38,7 +42,7 @@ export interface NotificationSettings {
   urgentIssues: boolean;
 }
 
-const DEFAULT_PROFILE: ProfileData = { firstName: '', lastName: '', email: '', phone: '', bio: '' };
+const DEFAULT_PROFILE: ProfileData = { firstName: '', lastName: '', email: '', phone: '', bio: '', city: '', country: '', languages: [], timezone: '' };
 
 const DEFAULT_SYSTEM: SystemSettings = {
   autoApproveEnrollments: false,
@@ -94,13 +98,18 @@ export function useAdminSettings(): UseAdminSettingsReturn {
     try {
       setLoading(true);
       const response = await apiClient.get(apiConfig.endpoints.profile);
-      const data = (response as { data?: ProfileData }).data ?? (response as ProfileData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = ((response as any).data ?? response) as any;
       setProfileData({
         firstName: data.firstName || '',
         lastName: data.lastName || '',
         email: data.email || '',
         phone: data.phone || '',
         bio: data.bio || '',
+        city: data.city || '',
+        country: data.country || '',
+        languages: Array.isArray(data.languages) ? data.languages : [],
+        timezone: data.settings?.timezone || '',
       });
     } catch (err: unknown) {
       console.error('Failed to fetch settings:', err);

@@ -15,6 +15,7 @@ import {
   ArrowDown,
   SlidersHorizontal,
   Check,
+  Settings,
 } from 'lucide-react';
 import { NavLink } from '@/lib/config/navigation';
 import { useNavPreferences } from '@/lib/hooks/shared';
@@ -270,14 +271,25 @@ export default function Navigation({ role }: NavigationProps) {
       <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-slate-100">
         <div className="flex flex-col flex-1 overflow-y-auto">
 
-          {/* Logo */}
-          <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-100">
-            <div className="flex items-center justify-center w-9 h-9 bg-indigo-600 rounded-xl shadow-sm shadow-indigo-200">
+          {/* Logo + quick actions (notifications & settings, always visible) */}
+          <div className="flex items-center gap-3 px-4 py-5 border-b border-slate-100">
+            <div className="flex items-center justify-center w-9 h-9 bg-indigo-600 rounded-xl shadow-sm shadow-indigo-200 shrink-0">
               <span className="text-white font-bold text-sm">P</span>
             </div>
-            <div>
-              <div className="font-semibold text-slate-900 text-sm">Pathment</div>
-              <div className="text-slate-400 text-xs capitalize">{role} portal</div>
+            <div className="min-w-0">
+              <div className="font-semibold text-slate-900 text-sm truncate">Pathment</div>
+              <div className="text-slate-400 text-xs capitalize truncate">{role} portal</div>
+            </div>
+            <div className="ml-auto flex items-center gap-0.5 shrink-0">
+              {user?.id && <NotificationDrawer userId={user.id} apiBaseUrl={apiBaseUrl} />}
+              <Link
+                href={`/${role}/settings`}
+                title="Settings"
+                aria-label="Settings"
+                className={`p-2 rounded-xl transition-colors ${pathname.startsWith(`/${role}/settings`) ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'}`}
+              >
+                <Settings className="w-5 h-5" />
+              </Link>
             </div>
           </div>
 
@@ -295,11 +307,6 @@ export default function Navigation({ role }: NavigationProps) {
           {/* Bottom Section */}
           <div className="px-3 py-4 border-t border-slate-100 space-y-1">
             <UserProfileCard />
-            <div className="relative mt-2">
-              {user?.id && (
-                <NotificationDrawer userId={user.id} apiBaseUrl={apiBaseUrl} showLabel />
-              )}
-            </div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-3 px-3 py-2.5 w-full text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors text-left group"
@@ -328,6 +335,14 @@ export default function Navigation({ role }: NavigationProps) {
             {user?.id && (
               <NotificationDrawer userId={user.id} apiBaseUrl={apiBaseUrl} />
             )}
+            <Link
+              href={`/${role}/settings`}
+              title="Settings"
+              aria-label="Settings"
+              className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+            >
+              <Settings className="w-5 h-5" />
+            </Link>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"

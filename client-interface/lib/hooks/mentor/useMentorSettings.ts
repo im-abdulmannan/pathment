@@ -14,6 +14,10 @@ export interface MentorProfileData {
   email: string;
   phone: string;
   bio: string;
+  city: string;
+  country: string;
+  languages: string[];
+  timezone: string;
 }
 
 export interface MentorProfessionalProfile {
@@ -70,6 +74,10 @@ export function useMentorSettings(): UseMentorSettingsReturn {
     email: '',
     phone: '',
     bio: '',
+    city: '',
+    country: '',
+    languages: [],
+    timezone: '',
   });
 
   const [mentorProfile, setMentorProfile] = useState<MentorProfessionalProfile>({
@@ -107,6 +115,10 @@ export function useMentorSettings(): UseMentorSettingsReturn {
         email: data.email || '',
         phone: data.phone || '',
         bio: data.bio || '',
+        city: data.city || '',
+        country: data.country || '',
+        languages: Array.isArray(data.languages) ? data.languages : [],
+        timezone: data.settings?.timezone || '',
       });
 
       if (data.mentorProfile) {

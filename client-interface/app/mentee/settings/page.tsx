@@ -1,17 +1,20 @@
 'use client';
 
-import { 
-  User, 
-  GraduationCap, 
-  Target, 
-  Bell, 
+import {
+  User,
+  GraduationCap,
+  Target,
+  Bell,
   Shield,
   Loader2,
-  Save
+  Save,
+  Sparkles
 } from 'lucide-react';
 import { useMenteeSettings } from '@/lib/hooks/mentee';
 import { PageHeader, TabBar } from '@/components/admin/ui';
 import SecurityTab from '@/components/shared/SecurityTab';
+import { LocationDetailsFields } from '@/components/settings/LocationDetailsFields';
+import { SkillsTab } from '@/components/settings/SkillsTab';
 import type { Tab } from '@/components/admin/ui';
 
 export default function MenteeSettings() {
@@ -45,6 +48,7 @@ export default function MenteeSettings() {
   const tabs: Tab[] = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'mentee', label: 'Learning Info', icon: GraduationCap },
+    { id: 'skills', label: 'Skills', icon: Sparkles },
     { id: 'preferences', label: 'Preferences', icon: Target },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
@@ -123,6 +127,13 @@ export default function MenteeSettings() {
                 />
               </div>
 
+              <div className="pt-6 border-t border-slate-100">
+                <LocationDetailsFields
+                  value={{ city: profileData.city, country: profileData.country, languages: profileData.languages, timezone: profileData.timezone }}
+                  onChange={(patch) => setProfileData({ ...profileData, ...patch })}
+                />
+              </div>
+
               <button
                 onClick={handleProfileUpdate}
                 disabled={saving}
@@ -132,6 +143,11 @@ export default function MenteeSettings() {
                 Save Changes
               </button>
             </div>
+          )}
+
+          {/* Skills Tab */}
+          {activeTab === 'skills' && (
+            <SkillsTab blurb="Add the skills you have or are building. Your mentor sees these to tailor support." />
           )}
 
           {/* Mentee Info Tab */}
@@ -203,6 +219,17 @@ export default function MenteeSettings() {
                     onChange={(e) => setMenteeProfile({ ...menteeProfile, githubUrl: e.target.value })}
                     className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="https://github.com/..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 mb-2 text-sm font-medium">Portfolio URL</label>
+                  <input
+                    type="url"
+                    value={menteeProfile.portfolioUrl}
+                    onChange={(e) => setMenteeProfile({ ...menteeProfile, portfolioUrl: e.target.value })}
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="https://..."
                   />
                 </div>
               </div>
