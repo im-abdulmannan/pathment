@@ -41,7 +41,7 @@ const listMeetings = catchAsync(async (req, res) => {
 });
 
 const updateMeetingStatus = catchAsync(async (req, res) => {
-  const meeting = await schedulingService.updateMeetingStatus(req.user.id, req.params.id, req.body.status);
+  const meeting = await schedulingService.updateMeetingStatus(req.user.id, req.params.id, req.body.status, req.body.reason);
   res.status(200).json(successResponse('Meeting updated', { meeting }));
 });
 

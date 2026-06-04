@@ -53,6 +53,16 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'scheduled',
       validate: { isIn: [['scheduled', 'done', 'cancelled']] }
+    },
+    cancellationReason: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: 'cancellation_reason'
+    },
+    cancelledBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: 'cancelled_by'
     }
   }, {
     tableName: 'scheduled_meetings',

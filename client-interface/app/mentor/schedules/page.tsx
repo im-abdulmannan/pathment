@@ -247,6 +247,9 @@ function AvailabilityTab() {
   const [duration, setDuration] = useState(30);
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Cancelling a 1:1 opens a reason prompt (shown to the mentee).
+  const [cancelFor, setCancelFor] = useState<{ id: string; who: string } | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const publish = async () => {
     if (!date) { toast.error('Pick a date'); return; }
@@ -257,8 +260,17 @@ function AvailabilityTab() {
   const removeSlot = async (id: string) => {
     try { setBusyId(id); await meetingsApi.deleteSlot(id); refetch(); } catch (e: any) { toast.error(e?.response?.data?.message || 'Could not remove'); } finally { setBusyId(null); }
   };
-  const setStatus = async (id: string, status: 'done' | 'cancelled') => {
-    try { setBusyId(id); await meetingsApi.updateStatus(id, status); refetch(); } catch { toast.error('Could not update'); } finally { setBusyId(null); }
+  const markDone = async (id: string) => {
+    try { setBusyId(id); await meetingsApi.updateStatus(id, 'done'); refetch(); } catch { toast.error('Could not update'); } finally { setBusyId(null); }
+  };
+  const confirmCancel = async () => {
+    if (!cancelFor) return;
+    try {
+      setBusyId(cancelFor.id);
+      await meetingsApi.updateStatus(cancelFor.id, 'cancelled', cancelReason.trim() || undefined);
+      toast.success('1:1 cancelled — the mentee has been notified');
+      setCancelFor(null); setCancelReason(''); refetch();
+    } catch { toast.error('Could not cancel'); } finally { setBusyId(null); }
   };
   const upcoming = meetings.filter((m) => m.status === 'scheduled');
 
@@ -298,8 +310,8 @@ function AvailabilityTab() {
                   <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center shrink-0"><span className="text-indigo-700 text-xs font-medium">{m.mentee?.firstName?.[0]}{m.mentee?.lastName?.[0]}</span></div>
                   <div className="min-w-0 flex-1"><p className="text-sm font-medium text-slate-900">{m.mentee?.firstName} {m.mentee?.lastName}</p><div className="flex items-center gap-2 text-xs text-slate-500"><Clock className="w-3 h-3" />{m.day} · {m.time} · {m.durationMins}m</div>{m.agenda && <p className="text-xs text-slate-500 mt-0.5 truncate">{m.agenda}</p>}</div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button onClick={() => setStatus(m.id, 'done')} disabled={busyId === m.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium hover:bg-emerald-100 disabled:opacity-50"><Check className="w-3.5 h-3.5" />Done</button>
-                    <button onClick={() => setStatus(m.id, 'cancelled')} disabled={busyId === m.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium hover:border-red-300 hover:text-red-600 disabled:opacity-50"><X className="w-3.5 h-3.5" />Cancel</button>
+                    <button onClick={() => markDone(m.id)} disabled={busyId === m.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-medium hover:bg-emerald-100 disabled:opacity-50"><Check className="w-3.5 h-3.5" />Done</button>
+                    <button onClick={() => { setCancelReason(''); setCancelFor({ id: m.id, who: `${m.mentee?.firstName ?? ''} ${m.mentee?.lastName ?? ''}`.trim() || 'your mentee' }); }} disabled={busyId === m.id} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium hover:border-red-300 hover:text-red-600 disabled:opacity-50"><X className="w-3.5 h-3.5" />Cancel</button>
                   </div>
                 </div>
               ))}
@@ -307,6 +319,32 @@ function AvailabilityTab() {
           )}
         </div>
       </section>
+
+      <Drawer
+        open={!!cancelFor}
+        onClose={() => setCancelFor(null)}
+        title="Cancel this 1:1"
+        subtitle={cancelFor ? `with ${cancelFor.who}` : undefined}
+        footer={
+          <>
+            <button onClick={() => setCancelFor(null)} className="px-4 py-2 border border-slate-200 text-slate-700 rounded-xl text-sm hover:bg-slate-50">Keep meeting</button>
+            <button onClick={confirmCancel} disabled={busyId === cancelFor?.id} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm inline-flex items-center gap-2 disabled:opacity-50">
+              {busyId === cancelFor?.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}Cancel 1:1
+            </button>
+          </>
+        }
+      >
+        <label className="block text-sm font-medium text-slate-700 mb-1.5">Reason <span className="text-slate-400 font-normal">(shared with the mentee)</span></label>
+        <textarea
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+          rows={4}
+          maxLength={1000}
+          placeholder="e.g. Something urgent came up — let's rebook for later this week."
+          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+        />
+        <p className="mt-2 text-xs text-slate-400">A short reason helps your mentee understand and rebook. The slot is freed so they can book again.</p>
+      </Drawer>
     </div>
   );
 }

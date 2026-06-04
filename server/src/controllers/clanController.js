@@ -13,6 +13,15 @@ const clanHealth = catchAsync(async (req, res) => {
 });
 
 /**
+ * GET /api/clans/insights  (admin)
+ * Worst-first clan comparison + the org fairness lens (absolute vs relative).
+ */
+const clanInsights = catchAsync(async (req, res) => {
+  const insights = await clanHealthService.orgInsights();
+  res.status(200).json(successResponse('Clan insights retrieved', insights));
+});
+
+/**
  * GET /api/clans
  * List clans (optionally filtered by program/status).
  */
@@ -84,6 +93,7 @@ const removeMember = catchAsync(async (req, res) => {
 module.exports = {
   listClans,
   clanHealth,
+  clanInsights,
   myMemberships,
   mentorPrograms,
   getClan,

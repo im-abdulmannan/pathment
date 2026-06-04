@@ -6,6 +6,8 @@ export const clanApi = {
     apiClient.get('/clans', { params: { programId, status } }),
   /** Org-wide clan-health snapshot grouped by program (admin dashboard). */
   health: () => apiClient.get('/clans/health'),
+  /** Org insights — clan comparison + fairness lens (admin /admin/insights). */
+  insights: () => apiClient.get('/clans/insights'),
   /** Programs the current mentor runs, with their clans + roster counts. */
   mentorPrograms: () => apiClient.get('/clans/mentor/programs'),
   get: (id: string) => apiClient.get(`/clans/${id}`),

@@ -113,7 +113,7 @@ class CohortService {
 
     if (lastActiveDays > 10) {
       level = 'high';
-      reasons.push(`no activity in ${lastActiveDays} days`);
+      reasons.push(Number.isFinite(lastActiveDays) ? `no activity in ${lastActiveDays} days` : 'no activity logged yet');
     } else if (behind >= 30 && gap < 10) {
       level = 'high';
       reasons.push('well behind plan with no logged reason');

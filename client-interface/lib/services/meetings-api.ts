@@ -15,6 +15,6 @@ export const meetingsApi = {
 
   // Meetings (both)
   listMeetings: () => apiClient.get('/meetings'),
-  updateStatus: (id: string, status: 'scheduled' | 'done' | 'cancelled') =>
-    apiClient.patch(`/meetings/${id}/status`, { status }),
+  updateStatus: (id: string, status: 'scheduled' | 'done' | 'cancelled', reason?: string) =>
+    apiClient.patch(`/meetings/${id}/status`, { status, reason }),
 };

@@ -151,14 +151,19 @@ class SchedulingService {
     });
   }
 
-  async updateMeetingStatus(userId, meetingId, status) {
+  async updateMeetingStatus(userId, meetingId, status, reason = null) {
     if (!['scheduled', 'done', 'cancelled'].includes(status)) throw new ValidationError('Invalid status');
     const meeting = await models.ScheduledMeeting.findByPk(meetingId);
     if (!meeting) throw new NotFoundError('Meeting not found');
     if (meeting.mentorId !== userId && meeting.menteeId !== userId) {
       throw new ValidationError('Not your meeting');
     }
+
     meeting.status = status;
+    if (status === 'cancelled') {
+      meeting.cancellationReason = reason && String(reason).trim() ? String(reason).trim().slice(0, 1000) : null;
+      meeting.cancelledBy = userId;
+    }
     await meeting.save();
 
     // Free the slot if cancelled.
@@ -166,7 +171,37 @@ class SchedulingService {
       const slot = await models.AvailabilitySlot.findByPk(meeting.availabilitySlotId);
       if (slot) { slot.taken = false; slot.takenBy = null; await slot.save(); }
     }
+
+    // Tell the other party who cancelled and why.
+    if (status === 'cancelled') {
+      this._notifyCancellation(meeting, userId).catch((e) => console.error('[Scheduling] cancel notify failed:', e.message));
+    }
     return meeting;
+  }
+
+  /** Notify the counterparty that a 1:1 was cancelled, surfacing the reason. */
+  async _notifyCancellation(meeting, cancelledById) {
+    const byMentor = cancelledById === meeting.mentorId;
+    const recipientId = byMentor ? meeting.menteeId : meeting.mentorId;
+    const canceller = await models.User.findByPk(cancelledById, { attributes: ['firstName', 'lastName'] });
+    const cancellerName = canceller ? `${canceller.firstName} ${canceller.lastName}`.trim() : (byMentor ? 'Your mentor' : 'Your mentee');
+    const when = `${meeting.day} at ${meeting.time}`;
+    const reasonLine = meeting.cancellationReason ? ` Reason: “${meeting.cancellationReason}”` : '';
+
+    await notificationOrchestrator.dispatch({
+      eventKey: NOTIFICATION_EVENTS.MEETING_CANCELLED,
+      recipients: [{ userId: recipientId }],
+      payload: {
+        title: `1:1 cancelled — ${when}`,
+        message: `${cancellerName} cancelled your 1:1 on ${when}.${reasonLine}${byMentor ? ' Book another slot when you’re ready.' : ''}`,
+        actionUrl: byMentor ? '/mentee/meetings' : '/mentor/schedules',
+        actionLabel: byMentor ? 'Find a new slot' : 'View schedule',
+        relatedEntityType: 'scheduled_meeting',
+        relatedEntityId: meeting.id,
+        emailSubject: `Your 1:1 on ${when} was cancelled`
+      },
+      dedupe: { relatedEntityType: 'meeting_cancelled', relatedEntityId: meeting.id }
+    });
   }
 }
 

@@ -21,7 +21,8 @@ EXTENSION_HANDLED: 'extension_handled',
   COMMUNITY_ANSWER_ACCEPTED: 'community_answer_accepted',
   COMPLETION_READY_FOR_SIGNOFF: 'completion_ready_for_signoff',
   PROGRAM_COMPLETED: 'program_completed',
-  MENTOR_FEEDBACK_REQUESTED: 'mentor_feedback_requested'
+  MENTOR_FEEDBACK_REQUESTED: 'mentor_feedback_requested',
+  MEETING_CANCELLED: 'meeting_cancelled'
 };
 
 const NOTIFICATION_MATRIX = {
@@ -139,6 +140,11 @@ const NOTIFICATION_MATRIX = {
     type: 'feedback',
     preferenceKey: 'mentor_feedback_requested',
     channels: { inApp: true, email: false, chat: false }
+  },
+  [NOTIFICATION_EVENTS.MEETING_CANCELLED]: {
+    type: 'system',
+    preferenceKey: 'meeting_cancelled',
+    channels: { inApp: true, email: true, chat: false }
   }
 };
 

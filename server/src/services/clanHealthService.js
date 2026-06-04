@@ -1,3 +1,5 @@
+const { Op } = require('sequelize');
+const { models } = require('../db');
 const clanService = require('./clanService');
 const cohortService = require('./cohortService');
 
@@ -163,6 +165,97 @@ class ClanHealthService {
       }));
 
     return { kpis, programs: programList, atRiskMentees };
+  }
+
+  /**
+   * Org Insights payload (admin /admin/insights): a worst-first CLAN comparison
+   * plus the fairness lens — org absolute vs relative progress and a per-mentee
+   * distribution. "Extensions" = accepted DelayEvents (friction the org granted).
+   */
+  async orgInsights() {
+    const clans = await clanService.listClans();
+
+    const menteeIds = new Set();
+    for (const clan of clans) {
+      for (const m of clan.memberships || []) if (m.role === 'mentee') menteeIds.add(m.userId);
+    }
+    const ids = [...menteeIds];
+    const rowList = await Promise.all(ids.map((id) => cohortService.buildMenteeRow(id)));
+    const rowById = new Map();
+    for (const row of rowList) if (row) rowById.set(row.id, row);
+
+    // Accepted delays = extensions granted, tallied per mentee.
+    const extByMentee = new Map();
+    if (ids.length) {
+      const delays = await models.DelayEvent.findAll({
+        where: { menteeId: { [Op.in]: ids }, accepted: true },
+        attributes: ['menteeId'],
+      });
+      for (const d of delays) extByMentee.set(d.menteeId, (extByMentee.get(d.menteeId) || 0) + 1);
+    }
+
+    const clanRows = [];
+    const orgRows = [];
+    for (const clan of clans) {
+      const menteeMemberships = (clan.memberships || []).filter((m) => m.role === 'mentee');
+      const rows = menteeMemberships.map((m) => rowById.get(m.userId)).filter(Boolean);
+      orgRows.push(...rows);
+
+      const memberCount = menteeMemberships.length;
+      const avgCompletion = avg(rows.map((r) => r.absoluteProgress));
+      const avgOnTime = avg(rows.map((r) => r.onTimeRate));
+      const avgRelative = avg(rows.map((r) => r.relativeProgress));
+      const atRisk = rows.filter((r) => r.risk !== 'low').length;
+      const openBlockers = rows.reduce((s, r) => s + (r.openBlockers || 0), 0);
+      const extensions = menteeMemberships.reduce((s, m) => s + (extByMentee.get(m.userId) || 0), 0);
+      const health = deriveStatus({ memberCount, atRisk, avgCompletion, avgOnTime });
+
+      clanRows.push({
+        id: clan.id,
+        name: clan.name,
+        program: clan.program?.name || 'Unassigned',
+        status: health.status,
+        statusLabel: health.label,
+        memberCount,
+        avgCompletion,
+        avgOnTime,
+        avgRelative,
+        atRisk,
+        openBlockers,
+        extensions,
+      });
+    }
+
+    const statusRank = { red: 0, amber: 1, green: 2 };
+    clanRows.sort((a, b) => (statusRank[a.status] - statusRank[b.status]) || (b.atRisk - a.atRisk));
+
+    const avgAbsolute = avg(orgRows.map((r) => r.absoluteProgress));
+    const avgRelative = avg(orgRows.map((r) => r.relativeProgress));
+    const distribution = orgRows
+      .map((r) => ({ id: r.id, name: r.name, absolute: r.absoluteProgress, relative: r.relativeProgress, gap: r.relativeProgress - r.absoluteProgress }))
+      .sort((a, b) => b.gap - a.gap)
+      .slice(0, 24);
+
+    const totalExtensions = [...extByMentee.values()].reduce((a, b) => a + b, 0);
+    const totalOpenBlockers = orgRows.reduce((s, r) => s + (r.openBlockers || 0), 0);
+    const redClans = clanRows.filter((c) => c.status === 'red');
+
+    return {
+      kpis: {
+        activeMentees: orgRows.length,
+        avgCompletion: avgAbsolute,
+        avgRelative,
+        atRisk: orgRows.filter((r) => r.risk !== 'low').length,
+        totalExtensions,
+        totalOpenBlockers,
+        clansRed: redClans.length,
+        clans: clans.length,
+      },
+      fairness: { avgAbsolute, avgRelative, gap: avgRelative - avgAbsolute },
+      clans: clanRows,
+      distribution,
+      redClans: redClans.map((c) => c.name),
+    };
   }
 }
 

@@ -22,6 +22,8 @@ export interface MenteeMeeting {
   agenda: string | null;
   status: 'scheduled' | 'done' | 'cancelled';
   mentor?: { id: string; firstName: string; lastName: string };
+  cancellationReason?: string | null;
+  cancelledBy?: string | null;
 }
 
 export interface UseMenteeMeetingsReturn {

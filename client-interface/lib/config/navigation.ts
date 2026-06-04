@@ -57,6 +57,7 @@ export const navigationConfig: Record<string, NavLink[]> = {
     { path: '/admin/clans', icon: Users2, label: 'Clans' },
     { path: '/admin/requests', icon: GitPullRequest, label: 'Clan Requests' },
     { path: '/admin/enrollment/overview', icon: Users, label: 'Enrollments' },
+    { path: '/admin/insights', icon: TrendingUp, label: 'Insights' },
     { path: '/admin/invites', icon: UserPlus, label: 'Invites' },
     {
       path: '/admin/users',

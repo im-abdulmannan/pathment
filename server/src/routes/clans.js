@@ -15,6 +15,9 @@ router.get('/', authenticate, clanController.listClans);
 // Org-wide clan-health snapshot grouped by program (admin dashboard).
 router.get('/health', authenticate, authorize(['admin']), clanController.clanHealth);
 
+// Org insights — clan comparison + fairness lens (admin /admin/insights).
+router.get('/insights', authenticate, authorize(['admin']), clanController.clanInsights);
+
 // Clan detail.
 router.get('/:id', authenticate, clanController.getClan);
 

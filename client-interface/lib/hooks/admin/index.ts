@@ -20,6 +20,15 @@ export type {
   ClanStatus,
 } from './useClanHealth';
 
+export { useOrgInsights } from './useOrgInsights';
+export type {
+  UseOrgInsightsReturn,
+  OrgInsights,
+  InsightClan,
+  InsightDistributionRow,
+  InsightStatus,
+} from './useOrgInsights';
+
 export { useAnnouncements } from './useAnnouncements';
 export type { UseAnnouncementsReturn, Announcement } from './useAnnouncements';
 
