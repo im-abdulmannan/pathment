@@ -14,7 +14,11 @@ const NOTIFICATION_EVENTS = {
   WEEKLY_PROGRESS_REPORT: 'weekly_progress_report',
   EXTENSION_REQUESTED: 'extension_requested',
 EXTENSION_HANDLED: 'extension_handled',
-  MENTOR_NUDGE: 'mentor_nudge'
+  MENTOR_NUDGE: 'mentor_nudge',
+  COMMUNITY_MENTION: 'community_mention',
+  COMMUNITY_REPLY: 'community_reply',
+  COMMUNITY_KUDOS: 'community_kudos',
+  COMMUNITY_ANSWER_ACCEPTED: 'community_answer_accepted'
 };
 
 const NOTIFICATION_MATRIX = {
@@ -96,6 +100,26 @@ const NOTIFICATION_MATRIX = {
   [NOTIFICATION_EVENTS.MENTOR_NUDGE]: {
     type: 'system',
     preferenceKey: 'mentor_nudge',
+    channels: { inApp: true, email: false, chat: false }
+  },
+  [NOTIFICATION_EVENTS.COMMUNITY_MENTION]: {
+    type: 'message',
+    preferenceKey: 'community_mention',
+    channels: { inApp: true, email: false, chat: false }
+  },
+  [NOTIFICATION_EVENTS.COMMUNITY_REPLY]: {
+    type: 'message',
+    preferenceKey: 'community_reply',
+    channels: { inApp: true, email: false, chat: false }
+  },
+  [NOTIFICATION_EVENTS.COMMUNITY_KUDOS]: {
+    type: 'message',
+    preferenceKey: 'community_kudos',
+    channels: { inApp: true, email: false, chat: false }
+  },
+  [NOTIFICATION_EVENTS.COMMUNITY_ANSWER_ACCEPTED]: {
+    type: 'system',
+    preferenceKey: 'community_answer_accepted',
     channels: { inApp: true, email: false, chat: false }
   }
 };

@@ -1,12 +1,38 @@
 const express = require('express');
 const router = express.Router();
 const communityController = require('../controllers/communityController');
-const { authenticate } = require('../middlewares/auth');
+const { authenticate, authorize } = require('../middlewares/auth');
 
-// Cohort social feed (any authenticated user).
-router.get('/feed', authenticate, communityController.feed);
-router.get('/people', authenticate, communityController.people);
-router.post('/posts', authenticate, communityController.createPost);
-router.post('/posts/:id/react', authenticate, communityController.react);
+// All community routes require auth; per-space access is enforced in the
+// service via communitySpaceService (membership-derived), so a member only
+// ever reads/writes spaces they belong to.
+router.use(authenticate);
+
+// Spaces & people
+router.get('/spaces', communityController.listSpaces);
+router.get('/members', communityController.members);
+router.get('/people', communityController.people);
+
+// Feed
+router.get('/feed', communityController.feed);
+
+// Posts
+router.post('/posts', communityController.createPost);
+router.patch('/posts/:id', communityController.updatePost);
+router.delete('/posts/:id', communityController.deletePost);
+router.post('/posts/:id/pin', communityController.pinPost);
+router.post('/posts/:id/react', communityController.react);
+
+// Comments / threads
+router.get('/posts/:id/comments', communityController.listComments);
+router.post('/posts/:id/comments', communityController.addComment);
+router.post('/posts/:id/accept', communityController.acceptAnswer);
+router.patch('/comments/:id', communityController.updateComment);
+router.delete('/comments/:id', communityController.deleteComment);
+
+// Moderation
+router.post('/reports', communityController.report);
+router.get('/reports', authorize(['admin']), communityController.listReports);
+router.patch('/reports/:id', authorize(['admin']), communityController.resolveReport);
 
 module.exports = router;

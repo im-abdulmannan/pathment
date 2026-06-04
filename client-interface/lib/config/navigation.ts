@@ -82,6 +82,7 @@ export const navigationConfig: Record<string, NavLink[]> = {
     { path: '/mentor/scores', icon: Gauge, label: 'Progress Scores' },
     { path: '/mentor/reports', icon: FileText, label: 'Reports' },
     { path: '/mentor/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { path: '/mentor/community', icon: Users, label: 'Community' },
     { path: '/mentor/rewards', icon: Gift, label: 'Rewards' },
     { path: '/mentor/promotions', icon: TrendingUp, label: 'Promotions' },
     { path: '/mentor/library', icon: BookOpen, label: 'Library' },

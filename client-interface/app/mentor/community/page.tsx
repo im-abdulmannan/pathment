@@ -2,6 +2,6 @@
 
 import CommunityHub from '@/components/community/CommunityHub';
 
-export default function MenteeCommunity() {
+export default function MentorCommunity() {
   return <CommunityHub />;
 }

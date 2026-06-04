@@ -22,7 +22,7 @@ module.exports = (sequelize, DataTypes) => {
     type: {
       type: DataTypes.STRING(20),
       allowNull: false,
-      validate: { isIn: [['cheers', 'helpful']] }
+      validate: { isIn: [['cheers', 'celebrate', 'helpful', 'insightful']] }
     }
   }, {
     tableName: 'community_reactions',

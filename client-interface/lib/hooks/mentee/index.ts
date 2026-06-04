@@ -10,9 +10,6 @@ export type { UseMyProgressReturn } from './useMyProgress';
 export { useDailyLog } from './useDailyLog';
 export type { UseDailyLogReturn, DailyLogEntry } from './useDailyLog';
 
-export { useCommunity } from './useCommunity';
-export type { UseCommunityReturn, CommunityPost, CommunityStats, CommunityPerson } from './useCommunity';
-
 export { useMyActivity } from './useMyActivity';
 export type { UseMyActivityReturn } from './useMyActivity';
 
