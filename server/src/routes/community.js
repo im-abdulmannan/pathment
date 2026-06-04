@@ -13,6 +13,7 @@ router.use(authenticate);
 router.get('/spaces', communityController.listSpaces);
 router.get('/members', communityController.members);
 router.get('/people', communityController.people);
+router.get('/leaderboard', communityController.leaderboard);
 
 // Feed
 router.get('/feed', communityController.feed);

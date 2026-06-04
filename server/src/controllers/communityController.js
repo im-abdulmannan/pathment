@@ -34,6 +34,16 @@ const people = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('People retrieved', { people: data }));
 });
 
+const leaderboard = catchAsync(async (req, res) => {
+  const { scopeType, scopeId, period } = req.query;
+  const data = await communityService.getLeaderboard(req.user, {
+    scopeType: scopeType || 'global',
+    scopeId: scopeId || null,
+    period: period === 'week' ? 'week' : 'all'
+  });
+  res.status(200).json(successResponse('Leaderboard retrieved', data));
+});
+
 // ── feed ────────────────────────────────────────────────────────────────
 const feed = catchAsync(async (req, res) => {
   const { scopeType, scopeId, type, tag, q } = req.query;
@@ -116,7 +126,7 @@ const resolveReport = catchAsync(async (req, res) => {
 });
 
 module.exports = {
-  listSpaces, members, people, feed, uploadAttachments,
+  listSpaces, members, people, leaderboard, feed, uploadAttachments,
   createPost, updatePost, deletePost, pinPost, react,
   listComments, addComment, updateComment, deleteComment, acceptAnswer,
   report, listReports, resolveReport

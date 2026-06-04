@@ -16,40 +16,60 @@ interface DrawerProps {
 }
 
 const WIDTHS = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-xl' } as const;
+const DURATION = 250; // keep in sync with the duration-[250ms] classes below
 
 /**
  * Drawer — the single, accessible right slide-over used across admin / mentor /
- * mentee for any "add / edit / assign" form. Handles Escape-to-close, body
- * scroll lock, backdrop dismiss, focus, and a subtle slide-in. Keeping every
- * form in this one component is what makes the system feel consistent.
+ * mentee for any "add / edit / assign" form. Animates smoothly both in AND out
+ * (stays mounted through the exit), and handles Escape-to-close, body scroll
+ * lock, backdrop dismiss, and focus.
  */
 export function Drawer({ open, onClose, title, subtitle, width = 'md', footer, children }: DrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const [shown, setShown] = useState(false);
+  // Latest onClose without making the open-effect re-run every render.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; });
 
+  const [mounted, setMounted] = useState(open); // in the DOM (true while animating out)
+  const [shown, setShown] = useState(false);    // the "open" visual state (drives transform/opacity)
+
+  // Drive enter/exit purely off `open`.
   useEffect(() => {
-    if (!open) { setShown(false); return; }
-    const raf = requestAnimationFrame(() => setShown(true));
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    if (open) {
+      setMounted(true);
+      // Two frames so the initial off-screen transform paints before we flip
+      // to the on-screen one — otherwise the browser skips the transition.
+      let r2 = 0;
+      const r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(() => setShown(true)); });
+      return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+    }
+    setShown(false);
+    const t = setTimeout(() => setMounted(false), DURATION);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  // Escape + scroll-lock + focus while mounted.
+  useEffect(() => {
+    if (!mounted) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCloseRef.current(); };
     document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const focusTimer = setTimeout(() => panelRef.current?.focus(), 60);
+    const focusTimer = setTimeout(() => panelRef.current?.focus(), DURATION);
     return () => {
-      cancelAnimationFrame(raf);
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
       clearTimeout(focusTimer);
     };
-  }, [open, onClose]);
+  }, [mounted]);
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div
-        className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${shown ? 'opacity-100' : 'opacity-0'}`}
-        onClick={onClose}
+        className={`absolute inset-0 bg-black/40 transition-opacity duration-[250ms] ease-out ${shown ? 'opacity-100' : 'opacity-0'}`}
+        onClick={() => onCloseRef.current()}
         aria-hidden="true"
       />
       <div
@@ -58,7 +78,8 @@ export function Drawer({ open, onClose, title, subtitle, width = 'md', footer, c
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`relative w-full ${WIDTHS[width]} h-full bg-white shadow-xl flex flex-col outline-none transform transition-transform duration-200 ease-out ${shown ? 'translate-x-0' : 'translate-x-full'}`}
+        style={{ willChange: 'transform' }}
+        className={`relative w-full ${WIDTHS[width]} h-full bg-white shadow-xl flex flex-col outline-none transform-gpu transition-transform duration-[250ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${shown ? 'translate-x-0' : 'translate-x-full'}`}
       >
         <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-slate-200 shrink-0">
           <div className="min-w-0">
@@ -66,7 +87,7 @@ export function Drawer({ open, onClose, title, subtitle, width = 'md', footer, c
             {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
           </div>
           <button
-            onClick={onClose}
+            onClick={() => onCloseRef.current()}
             aria-label="Close"
             className="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 shrink-0"
           >

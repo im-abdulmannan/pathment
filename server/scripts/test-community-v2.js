@@ -185,6 +185,12 @@ async function mkUser(first, caps) {
     const postedAgain = await scheduler._postStandupsToActiveClans([clan.id]);
     ok(postedAgain === 0, 'standup is idempotent within the week');
 
+    // ── community contribution leaderboard ──────────────────────────────────
+    const lb = await community.getLeaderboard(menteeA, { scopeType: 'clan', scopeId: clan.id, period: 'all' });
+    ok(Array.isArray(lb.leaderboard) && lb.leaderboard.length > 0, 'community leaderboard returns ranked contributors');
+    ok(lb.leaderboard.some(r => r.userId === menteeB.id && r.points > 0 && r.tier), 'a member who got kudos + an accepted answer ranks with points + a tier');
+    ok(lb.me && lb.me.userId === menteeA.id, 'leaderboard includes the requester own standing');
+
     // ── soft delete ─────────────────────────────────────────────────────
     await community.deletePost(menteeA, kudos.id);
     const feedDel = await community.feed(menteeA, { scopeType: 'clan', scopeId: clan.id });

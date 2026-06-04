@@ -15,6 +15,19 @@ const REACTION_TYPES = ['cheers', 'celebrate', 'helpful', 'insightful'];
 // Points awarded by community activity (no-op for non-mentees, which have no profile).
 const POINTS = { KUDOS_RECEIVED: 15, ANSWER_ACCEPTED: 25 };
 
+// Community CONTRIBUTION score — a self-contained reputation computed from
+// community activity (works for everyone, mentee or mentor, unlike the
+// mentee-only points engine). Powers the "Top contributors" leaderboard.
+const CONTRIB = { kudos: 15, answer: 25, post: 2, reaction: 3 };
+const TIERS = [
+  { min: 600, name: 'Legend' },
+  { min: 300, name: 'Champion' },
+  { min: 120, name: 'Helper' },
+  { min: 40, name: 'Contributor' },
+  { min: 0, name: 'Newcomer' },
+];
+const tierFor = (points) => (TIERS.find((t) => points >= t.min) || TIERS[TIERS.length - 1]).name;
+
 /**
  * Community v2 — a scoped social + knowledge layer. Every read/write is gated
  * by communitySpaceService so a member only ever sees the clan/cohort/program
@@ -122,6 +135,72 @@ class CommunityService {
   async getPeople(user, scopeType, scopeId) {
     if (scopeType) await this._requireAccess(user, scopeType, scopeId);
     return spaceService.getPeople(user, scopeType || 'global', scopeId || null);
+  }
+
+  /**
+   * Top contributors for a space (or the global lounge). A real, role-agnostic
+   * reputation computed from community activity — kudos received, accepted
+   * answers, helpful reactions, and participation — so recognition is visible
+   * right where people earn it. period: 'week' | 'all'.
+   */
+  async getLeaderboard(user, { scopeType = 'global', scopeId = null, period = 'all', limit = 10 } = {}) {
+    await this._requireAccess(user, scopeType, scopeId);
+    const since = period === 'week' ? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) : null;
+    const timeWhere = since ? { createdAt: { [Op.gte]: since } } : {};
+    const scopeWhere = scopeType === 'global' ? {} : { scopeType, scopeId: scopeId || null };
+
+    // Candidate members.
+    let memberIds;
+    if (scopeType === 'global') {
+      const rows = await models.CommunityPost.findAll({ where: { deletedAt: null, ...timeWhere }, attributes: ['authorId', 'toId'] });
+      const set = new Set();
+      rows.forEach((p) => { if (p.authorId) set.add(p.authorId); if (p.toId) set.add(p.toId); });
+      memberIds = [...set];
+    } else {
+      memberIds = await spaceService.getMemberIds(scopeType, scopeId);
+    }
+    if (!memberIds.length) return { leaderboard: [], me: null };
+
+    // Pull the activity that feeds the score.
+    const [kudos, posts] = await Promise.all([
+      models.CommunityPost.findAll({ where: { type: 'kudos', toId: { [Op.in]: memberIds }, deletedAt: null, ...scopeWhere, ...timeWhere }, attributes: ['toId'] }),
+      models.CommunityPost.findAll({ where: { authorId: { [Op.in]: memberIds }, deletedAt: null, ...scopeWhere, ...timeWhere }, attributes: ['id', 'authorId', 'acceptedCommentId'] })
+    ]);
+    const acceptedIds = posts.map((p) => p.acceptedCommentId).filter(Boolean);
+    const postIds = posts.map((p) => p.id);
+    const [acceptedComments, reactions] = await Promise.all([
+      acceptedIds.length ? models.CommunityComment.findAll({ where: { id: { [Op.in]: acceptedIds } }, attributes: ['authorId'] }) : [],
+      postIds.length ? models.CommunityReaction.findAll({ where: { postId: { [Op.in]: postIds }, type: { [Op.in]: REACTION_TYPES } }, attributes: ['postId'] }) : []
+    ]);
+    const postAuthor = new Map(posts.map((p) => [p.id, p.authorId]));
+
+    const tally = new Map(memberIds.map((id) => [id, { kudos: 0, answers: 0, posts: 0, reactions: 0 }]));
+    kudos.forEach((k) => { const t = tally.get(k.toId); if (t) t.kudos += 1; });
+    posts.forEach((p) => { const t = tally.get(p.authorId); if (t) t.posts += 1; });
+    acceptedComments.forEach((c) => { const t = tally.get(c.authorId); if (t) t.answers += 1; });
+    reactions.forEach((r) => { const a = postAuthor.get(r.postId); const t = a && tally.get(a); if (t) t.reactions += 1; });
+
+    let rows = memberIds.map((id) => {
+      const s = tally.get(id);
+      const points = s.kudos * CONTRIB.kudos + s.answers * CONTRIB.answer + s.posts * CONTRIB.post + s.reactions * CONTRIB.reaction;
+      return { userId: id, points, breakdown: s };
+    }).filter((r) => r.points > 0).sort((a, b) => b.points - a.points);
+
+    const users = await models.User.findAll({ where: { id: { [Op.in]: rows.map((r) => r.userId) } }, attributes: ['id', 'firstName', 'lastName'] });
+    const byId = new Map(users.map((u) => [u.id, u]));
+    const ranked = rows.map((r, i) => ({
+      rank: i + 1,
+      userId: r.userId,
+      name: fullName(byId.get(r.userId)) || 'Member',
+      avatar: initials(byId.get(r.userId)),
+      points: r.points,
+      tier: tierFor(r.points),
+      mine: r.userId === user.id
+    }));
+
+    const me = ranked.find((r) => r.userId === user.id)
+      || { rank: null, userId: user.id, name: fullName(user), points: 0, tier: tierFor(0), mine: true };
+    return { leaderboard: ranked.slice(0, limit), me };
   }
 
   // ── feed ────────────────────────────────────────────────────────────────

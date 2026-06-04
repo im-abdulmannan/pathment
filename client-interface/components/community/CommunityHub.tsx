@@ -505,6 +505,43 @@ export default function CommunityHub() {
             </div>
           )}
 
+          {/* Top contributors — recognition right where it's earned */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-slate-900 flex items-center gap-1.5"><Trophy className="w-4 h-4 text-amber-500" />Top contributors</h3>
+              <div className="flex gap-1 text-xs">
+                {(['week', 'all'] as const).map((p) => (
+                  <button key={p} onClick={() => hub.setLbPeriod(p)}
+                    className={`px-2 py-0.5 rounded-md ${hub.lbPeriod === p ? 'bg-indigo-50 text-indigo-700 font-medium' : 'text-slate-500 hover:bg-slate-50'}`}>
+                    {p === 'week' ? 'This week' : 'All time'}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {hub.leaderboard.length === 0 ? (
+              <p className="text-sm text-slate-500">No contributions yet — give kudos or answer a question to get on the board.</p>
+            ) : (
+              <div className="space-y-1">
+                {hub.leaderboard.map((r) => (
+                  <div key={r.userId} className={`flex items-center gap-2.5 px-1.5 py-1.5 rounded-lg ${r.mine ? 'bg-indigo-50' : ''}`}>
+                    <span className={`w-5 text-center text-xs font-semibold tabular-nums shrink-0 ${r.rank <= 3 ? 'text-amber-500' : 'text-slate-400'}`}>{r.rank}</span>
+                    <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0"><span className="text-indigo-700 text-[11px] font-medium">{r.avatar}</span></div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-slate-800 truncate">{r.name}{r.mine && <span className="text-indigo-500"> · you</span>}</p>
+                      <p className="text-[11px] text-slate-400">{r.tier}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-slate-900 tabular-nums shrink-0">{r.points}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {hub.myRank && !hub.leaderboard.some((r) => r.mine) && (
+              <p className="mt-2 pt-2 border-t border-slate-100 text-xs text-slate-500">
+                You: <span className="font-medium text-slate-700">{hub.myRank.tier}</span> · {hub.myRank.points} pts{hub.myRank.rank ? ` · #${hub.myRank.rank}` : ''} — climb by giving kudos &amp; answering questions.
+              </p>
+            )}
+          </div>
+
           <div className="bg-white rounded-2xl border border-slate-200 p-5">
             <button onClick={() => setShowMembers((s) => !s)} className="w-full flex items-center justify-between">
               <h3 className="font-semibold text-slate-900">Members ({hub.members.length})</h3>

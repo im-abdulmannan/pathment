@@ -50,6 +50,8 @@ export interface CommunityComment {
 export interface CommunityStats { given: number; cheersReceived: number; posts: number; openQuestions: number }
 export interface CommunityPerson { id: string; name: string }
 export interface CommunityMember { id: string; name: string; avatar: string; role: string }
+export interface LeaderboardEntry { rank: number; userId: string; name: string; avatar?: string; points: number; tier: string; mine?: boolean }
+export interface LeaderboardSelf { rank: number | null; userId: string; name: string; points: number; tier: string }
 
 export function useCommunityHub() {
   const [spaces, setSpaces] = useState<CommunitySpace[]>([]);
@@ -59,6 +61,9 @@ export function useCommunityHub() {
   const [stats, setStats] = useState<CommunityStats | null>(null);
   const [people, setPeople] = useState<CommunityPerson[]>([]);
   const [members, setMembers] = useState<CommunityMember[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [myRank, setMyRank] = useState<LeaderboardSelf | null>(null);
+  const [lbPeriod, setLbPeriod] = useState<'week' | 'all'>('all');
 
   const [typeFilter, setTypeFilter] = useState<PostType | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
@@ -123,6 +128,18 @@ export function useCommunityHub() {
     communityApi.members(active.type, active.id).then((r: any) => setMembers(r?.data?.members ?? [])).catch(() => setMembers([]));
   }, [active]);
 
+  // Leaderboard refresh when the space, period, or feed (new activity) changes.
+  const fetchLeaderboard = useCallback(async () => {
+    if (!active) return;
+    try {
+      const r: any = await communityApi.leaderboard(active.type, active.id, lbPeriod);
+      setLeaderboard(r?.data?.leaderboard ?? []);
+      setMyRank(r?.data?.me ?? null);
+    } catch { setLeaderboard([]); setMyRank(null); }
+  }, [active, lbPeriod]);
+
+  useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard]);
+
   const createPost = useCallback(async (input: Omit<CreatePostInput, 'scopeType' | 'scopeId'>) => {
     if (!active) return false;
     try {
@@ -156,12 +173,18 @@ export function useCommunityHub() {
     try { await communityApi.report({ targetType, targetId, reason }); toast.success('Reported to moderators'); } catch { toast.error('Could not report'); }
   }, []);
 
+  const refetch = useCallback(async () => {
+    await fetchFeed();
+    fetchLeaderboard();
+  }, [fetchFeed, fetchLeaderboard]);
+
   return {
     spaces, active, activeKey, setActiveKey,
     feed, shoutouts, stats, people, members,
+    leaderboard, myRank, lbPeriod, setLbPeriod,
     typeFilter, setTypeFilter, tagFilter, setTagFilter, query, setQuery,
     loadingSpaces, loadingFeed, error,
-    refetch: fetchFeed,
+    refetch,
     createPost, react, deletePost, pin, acceptAnswer, report,
   };
 }

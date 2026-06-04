@@ -1,23 +1,27 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Trophy, Loader2, Award } from 'lucide-react';
-import { useMentorCohort, type CohortMentee } from '@/lib/hooks/mentor';
+import { Trophy, Loader2, Award, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { useMentorCohort, type CohortMentee, type CohortMomentum } from '@/lib/hooks/mentor';
 
-// XP/level derived purely from real cohort stats (no fabricated streaks).
-function xpOf(m: CohortMentee): number {
-  return Math.round(m.absoluteProgress * 10 + m.onTimeRate * 5 + m.relativeProgress * 4);
-}
-function levelOf(xp: number): number {
-  return Math.floor(xp / 500) + 1;
-}
+// Real, honest signals only — no fabricated XP. Standings rank by RELATIVE
+// progress (the platform's fairness metric: output credited for logged,
+// accepted blockers), tie-broken by on-time reliability.
+const scoreOf = (m: CohortMentee) => m.relativeProgress * 1000 + m.onTimeRate;
+
 function badgesOf(m: CohortMentee): string[] {
   const b: string[] = [];
   if (m.onTimeRate >= 90) b.push('On-time hero');
-  if (m.momentum === 'up') b.push('Momentum');
+  if (m.momentum === 'up') b.push('Building momentum');
   if (m.absoluteProgress >= 75) b.push('Top progress');
   if (m.relativeProgress >= 95) b.push('Steady hand');
   return b;
+}
+
+function Momentum({ m }: { m: CohortMomentum }) {
+  if (m === 'up') return <span className="inline-flex items-center gap-0.5 text-emerald-600 text-xs"><TrendingUp className="w-3.5 h-3.5" />Building</span>;
+  if (m === 'down') return <span className="inline-flex items-center gap-0.5 text-red-600 text-xs"><TrendingDown className="w-3.5 h-3.5" />Slipping</span>;
+  return <span className="inline-flex items-center gap-0.5 text-slate-400 text-xs"><Minus className="w-3.5 h-3.5" />Steady</span>;
 }
 
 const PODIUM_RING = ['ring-amber-300', 'ring-slate-300', 'ring-orange-300'];
@@ -31,8 +35,8 @@ export default function MentorLeaderboard() {
   const ranked = useMemo(() => {
     return cohort
       .filter((m) => program === 'all' || m.program === program)
-      .map((m) => ({ m, xp: xpOf(m) }))
-      .sort((a, b) => b.xp - a.xp);
+      .slice()
+      .sort((a, b) => scoreOf(b) - scoreOf(a));
   }, [cohort, program]);
 
   const top3 = ranked.slice(0, 3);
@@ -41,8 +45,8 @@ export default function MentorLeaderboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-slate-900 mb-2">Leaderboard</h1>
-        <p className="text-slate-600">Friendly standings — earned from progress, fairness, and reliability.</p>
+        <h1 className="text-slate-900 mb-2">Cohort standings</h1>
+        <p className="text-slate-600">Ranked by fair progress — output is credited for logged, accepted blockers, so effort against real constraints counts. No vanity points.</p>
       </div>
 
       {programs.length > 0 && (
@@ -73,14 +77,15 @@ export default function MentorLeaderboard() {
           {/* Podium */}
           {top3.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {top3.map((r, i) => (
-                <div key={r.m.id} className={`bg-white rounded-2xl border border-slate-200 p-5 text-center ${i === 0 ? 'sm:-translate-y-2' : ''}`}>
+              {top3.map((m, i) => (
+                <div key={m.id} className={`bg-white rounded-2xl border border-slate-200 p-5 text-center ${i === 0 ? 'sm:-translate-y-2' : ''}`}>
                   <div className={`w-14 h-14 mx-auto rounded-full bg-indigo-100 ring-4 ${PODIUM_RING[i]} flex items-center justify-center`}>
-                    <span className="text-indigo-700 font-semibold">{r.m.avatar}</span>
+                    <span className="text-indigo-700 font-semibold">{m.avatar}</span>
                   </div>
-                  <p className="mt-3 font-medium text-slate-900 truncate">{r.m.name}</p>
-                  <p className="text-xs text-slate-500">Level {levelOf(r.xp)} · #{i + 1}</p>
-                  <p className="mt-1 text-lg font-semibold text-indigo-700 tabular-nums">{r.xp.toLocaleString()} XP</p>
+                  <p className="mt-3 font-medium text-slate-900 truncate">{m.name}</p>
+                  <p className="text-xs text-slate-500">#{i + 1} · {m.onTimeRate}% on-time</p>
+                  <p className="mt-1 text-lg font-semibold text-indigo-700 tabular-nums">{Math.round(m.relativeProgress)}%</p>
+                  <p className="text-[11px] text-slate-400">fair progress</p>
                 </div>
               ))}
             </div>
@@ -89,16 +94,19 @@ export default function MentorLeaderboard() {
           {/* Standings */}
           {rest.length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
-              {rest.map((r, i) => (
-                <div key={r.m.id} className="flex items-center gap-4 px-5 py-3.5">
+              {rest.map((m, i) => (
+                <div key={m.id} className="flex items-center gap-4 px-5 py-3.5">
                   <span className="w-6 text-center text-sm font-semibold text-slate-400 tabular-nums">{i + 4}</span>
                   <div className="w-9 h-9 bg-indigo-100 rounded-full flex items-center justify-center shrink-0">
-                    <span className="text-indigo-700 text-xs font-medium">{r.m.avatar}</span>
+                    <span className="text-indigo-700 text-xs font-medium">{m.avatar}</span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-900 truncate">{r.m.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-slate-900 truncate">{m.name}</p>
+                      <Momentum m={m.momentum} />
+                    </div>
                     <div className="flex flex-wrap gap-1 mt-0.5">
-                      {badgesOf(r.m).map((b) => (
+                      {badgesOf(m).map((b) => (
                         <span key={b} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[11px]">
                           <Award className="w-2.5 h-2.5" />{b}
                         </span>
@@ -106,8 +114,8 @@ export default function MentorLeaderboard() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold text-slate-900 tabular-nums">{r.xp.toLocaleString()} XP</p>
-                    <p className="text-xs text-slate-400">Level {levelOf(r.xp)}</p>
+                    <p className="text-sm font-semibold text-slate-900 tabular-nums">{Math.round(m.relativeProgress)}%</p>
+                    <p className="text-xs text-slate-400">{m.onTimeRate}% on-time</p>
                   </div>
                 </div>
               ))}

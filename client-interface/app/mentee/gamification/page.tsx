@@ -20,8 +20,10 @@ import {
   type LeaderboardEntry,
   type PointsHistoryEntry
 } from '@/lib/services/gamification-api';
+import { communityApi } from '@/lib/services/community-api';
 
 type LeaderboardPeriod = 'daily' | 'weekly' | 'monthly' | 'all_time';
+interface CommunityStanding { rank: number | null; points: number; tier: string }
 
 export default function MenteeGamificationPage() {
   const { user } = useAuth();
@@ -30,6 +32,7 @@ export default function MenteeGamificationPage() {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [history, setHistory] = useState<PointsHistoryEntry[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [community, setCommunity] = useState<CommunityStanding | null>(null);
   const [period, setPeriod] = useState<LeaderboardPeriod>('all_time');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,11 +47,12 @@ export default function MenteeGamificationPage() {
         setLoading(true);
         setError(null);
 
-        const [statsRes, badgesRes, historyRes, leaderboardRes] = await Promise.all([
+        const [statsRes, badgesRes, historyRes, leaderboardRes, communityRes] = await Promise.all([
           gamificationApi.getUserStats(user.id),
           gamificationApi.getUserBadges(user.id),
           gamificationApi.getUserPointsHistory(user.id, 12),
-          gamificationApi.getLeaderboard(period, 10)
+          gamificationApi.getLeaderboard(period, 10),
+          communityApi.leaderboard('global', null, 'all').catch(() => null)
         ]);
 
         if (!mounted) return;
@@ -56,6 +60,7 @@ export default function MenteeGamificationPage() {
         setBadges(badgesRes);
         setHistory(historyRes);
         setLeaderboard(leaderboardRes);
+        setCommunity((communityRes as { data?: { me?: CommunityStanding } } | null)?.data?.me ?? null);
       } catch (e: unknown) {
         if (!mounted) return;
 
@@ -119,10 +124,20 @@ export default function MenteeGamificationPage() {
             <h1 className="text-slate-900 mb-2">Your Progress Arena</h1>
             <p className="text-slate-600">Track points, climb levels, and unlock badges.</p>
           </div>
-          <div className="rounded-xl bg-white px-4 py-3 border border-indigo-200">
-            <div className="text-xs text-slate-500">Global Rank</div>
-            <div className="text-2xl font-semibold text-indigo-700">
-              {stats.leaderboardRank ? `#${stats.leaderboardRank}` : 'Unranked'}
+          <div className="flex gap-3">
+            <div className="rounded-xl bg-white px-4 py-3 border border-indigo-200 min-w-[110px]">
+              <div className="text-xs text-slate-500">Learning rank</div>
+              <div className="text-2xl font-semibold text-indigo-700">
+                {stats.leaderboardRank ? `#${stats.leaderboardRank}` : 'Unranked'}
+              </div>
+              <div className="text-[11px] text-slate-400">your XP journey</div>
+            </div>
+            <div className="rounded-xl bg-white px-4 py-3 border border-indigo-200 min-w-[120px]">
+              <div className="text-xs text-slate-500">Community standing</div>
+              <div className="text-lg font-semibold text-slate-900">{community ? community.tier : 'Newcomer'}</div>
+              <div className="text-[11px] text-slate-400">
+                {community && community.points > 0 ? `${community.points} pts${community.rank ? ` · #${community.rank}` : ''}` : 'helping others'}
+              </div>
             </div>
           </div>
         </div>

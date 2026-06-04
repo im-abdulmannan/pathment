@@ -25,7 +25,7 @@ export interface FeedQuery {
   q?: string | null;
 }
 
-const params = (q: FeedQuery | { scopeType?: string; scopeId?: string | null; status?: string }) => {
+const params = (q: Record<string, unknown>) => {
   const out: Record<string, string> = {};
   Object.entries(q).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') out[k] = String(v); });
   return out;
@@ -39,9 +39,11 @@ export const communityApi = {
     apiClient.get('/community/members', { params: params({ scopeType, scopeId }) }),
   people: (scopeType: ScopeType, scopeId?: string | null) =>
     apiClient.get('/community/people', { params: params({ scopeType, scopeId }) }),
+  leaderboard: (scopeType: ScopeType, scopeId?: string | null, period: 'week' | 'all' = 'all') =>
+    apiClient.get('/community/leaderboard', { params: params({ scopeType, scopeId, period }) }),
 
   // feed
-  feed: (q: FeedQuery) => apiClient.get('/community/feed', { params: params(q) }),
+  feed: (q: FeedQuery) => apiClient.get('/community/feed', { params: params({ ...q }) }),
 
   // attachments → returns { attachments: [{ url, name, kind }] }
   upload: (files: File[]) => {
