@@ -169,7 +169,7 @@ export default function RegisterPage() {
         )}
 
         {!inviteError && inviteDetails && (
-          <div className="mb-6 p-4 bg-brand-50 border border-brand-200 rounded-xl">
+          <div className="mb-6 p-4 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-xl">
             <p className="text-brand-900 text-sm">
               You are invited as <span className="font-semibold capitalize">{inviteDetails.role}</span>
             </p>

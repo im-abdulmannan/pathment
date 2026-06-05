@@ -94,7 +94,7 @@ export default function MenteeDailyLog() {
           return (
             <button key={d.key} onClick={() => setActiveKey(d.key)}
               className={`shrink-0 rounded-xl border px-3 py-2 text-center transition-colors ${
-                active ? 'border-brand-400 bg-brand-50' : 'border-slate-200 hover:border-slate-300'
+                active ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/10' : 'border-slate-200 hover:border-slate-300'
               }`}>
               <div className={`text-xs font-medium ${active ? 'text-brand-700' : 'text-slate-700'}`}>{d.label}</div>
               <div className="text-[11px] text-slate-400 flex items-center gap-1 justify-center">

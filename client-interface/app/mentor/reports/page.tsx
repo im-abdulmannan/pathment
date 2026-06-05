@@ -256,7 +256,7 @@ export default function MentorReports() {
 
           {/* AI-drafted narrative (editable) */}
           {aiDraft !== null && (
-            <div className="rounded-2xl border border-brand-200 bg-brand-50/40 p-5">
+            <div className="rounded-2xl border border-brand-200 bg-brand-50/40 dark:bg-brand-500/10 p-5">
               <div className="no-print flex items-center justify-between gap-2 mb-3">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-brand-600" />

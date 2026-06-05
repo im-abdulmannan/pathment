@@ -315,7 +315,7 @@ export default function MentorTaskDetailsPage({ params }: PageProps) {
             Feedback Given
           </h2>
           {feedback.map((fb: any, index: number) => (
-            <div key={fb.id || index} className="p-4 bg-brand-50 border border-brand-200 rounded-lg space-y-3">
+            <div key={fb.id || index} className="p-4 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-brand-900">
                   {fb.action === 'approve' || fb.action === 'approved' ? 'Approved' : fb.action === 'request_revision' ? 'Revision Requested' : 'Reviewed'}

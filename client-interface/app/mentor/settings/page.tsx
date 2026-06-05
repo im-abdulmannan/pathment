@@ -241,7 +241,7 @@ export default function MentorSettings() {
               </div>
 
               {/* Current Status Card */}
-              <div className="p-6 bg-gradient-to-br from-brand-50 to-brand-50 rounded-xl border border-brand-100">
+              <div className="p-6 bg-gradient-to-br from-brand-50 dark:from-brand-500/10 to-brand-50 dark:to-transparent rounded-xl border border-brand-100">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="text-slate-900 font-medium mb-1">Current Status</div>

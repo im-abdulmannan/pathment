@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '@/lib/services/api-client';
 import { apiConfig } from '@/lib/config/api';
+import { preferencesApi } from '@/lib/services/preferences-api';
 import { extractApiErrorMessage } from '@/lib/utils/api-error';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/context/AuthContext';
@@ -137,6 +138,14 @@ export function useMenteeSettings(): UseMenteeSettingsReturn {
           portfolioUrl:      data.menteeProfile.portfolioUrl      || '',
         });
       }
+
+      const prefs = data.settings?.preferences;
+      if (prefs?.notifications && typeof prefs.notifications === 'object') {
+        setNotificationSettings((prev) => ({ ...prev, ...prefs.notifications }));
+      }
+      if (prefs?.learning && typeof prefs.learning === 'object') {
+        setLearningPreferences((prev) => ({ ...prev, ...prefs.learning }));
+      }
     } catch (err: any) {
       console.error('Failed to fetch settings:', err);
       toast.error('Failed to load settings');
@@ -178,26 +187,26 @@ export function useMenteeSettings(): UseMenteeSettingsReturn {
   const handleLearningPreferencesUpdate = useCallback(async () => {
     try {
       setSaving(true);
-      // TODO: implement real API endpoint
-      toast.success('Learning preferences updated successfully');
-    } catch {
-      toast.error('Failed to update learning preferences');
+      await preferencesApi.update('learning', learningPreferences as unknown as Record<string, unknown>);
+      toast.success('Learning preferences saved');
+    } catch (err) {
+      toast.error(extractApiErrorMessage(err, 'Failed to save learning preferences'));
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [learningPreferences]);
 
   const handleNotificationUpdate = useCallback(async () => {
     try {
       setSaving(true);
-      // TODO: implement real API endpoint
-      toast.success('Notification settings updated successfully');
-    } catch {
-      toast.error('Failed to update notification settings');
+      await preferencesApi.update('notifications', notificationSettings as unknown as Record<string, unknown>);
+      toast.success('Notification settings saved');
+    } catch (err) {
+      toast.error(extractApiErrorMessage(err, 'Failed to save notification settings'));
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [notificationSettings]);
 
   return {
     loading,

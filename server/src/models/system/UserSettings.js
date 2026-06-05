@@ -83,6 +83,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 'ocean',
       field: 'color_theme'
     },
+    preferences: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: {}
+    },
     language: {
       type: DataTypes.STRING(10),
       defaultValue: 'en'

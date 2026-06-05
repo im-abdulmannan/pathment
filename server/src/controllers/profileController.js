@@ -33,7 +33,7 @@ class ProfileController {
           model: models.UserSettings,
           as: 'settings',
           required: false,
-          attributes: ['timezone', 'language', 'theme', 'colorTheme']
+          attributes: ['timezone', 'language', 'theme', 'colorTheme', 'preferences']
         }
       ]
     });
@@ -306,6 +306,23 @@ await user.update({
     if (theme === 'light' || theme === 'dark') patch.theme = theme;
     if (Object.keys(patch).length) await settings.update(patch);
     res.json(successResponse('Appearance updated', { theme: settings.theme, colorTheme: settings.colorTheme }));
+  });
+
+  /**
+   * Merge a group of preference toggles into user_settings.preferences.
+   * PATCH /api/profile/preferences  { group: 'notifications'|'learning'|'system'|'userManagement', values: {...} }
+   * Stored namespaced by group so different settings tabs don't clobber each other.
+   */
+  updatePreferences = catchAsync(async (req, res) => {
+    const { group, values } = req.body || {};
+    if (!group || typeof group !== 'string' || values == null || typeof values !== 'object') {
+      throw new ValidationError('group and values are required');
+    }
+    const [settings] = await models.UserSettings.findOrCreate({ where: { userId: req.user.id }, defaults: { userId: req.user.id } });
+    const current = settings.preferences && typeof settings.preferences === 'object' ? settings.preferences : {};
+    const next = { ...current, [group]: { ...(current[group] || {}), ...values } };
+    await settings.update({ preferences: next });
+    res.json(successResponse('Preferences saved', { preferences: next }));
   });
 
   /**

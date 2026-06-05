@@ -9,7 +9,7 @@ import { Sparkles } from 'lucide-react';
  */
 export function AISummaryPanel({ summary, signals }: { summary: string; signals: string[] }) {
   return (
-    <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-6">
+    <div className="rounded-2xl border border-brand-100 bg-brand-50/50 dark:bg-brand-500/10 p-6">
       <div className="flex items-center gap-2 mb-3">
         <div className="w-7 h-7 rounded-lg bg-brand-100 flex items-center justify-center">
           <Sparkles className="w-4 h-4 text-brand-600" />

@@ -62,7 +62,7 @@ export default function MentorAssignment() {
       />
 
       {/* Clan-based placement banner — the preferred path */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50/60 px-5 py-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50/60 dark:bg-brand-500/10 px-5 py-4">
         <div className="flex items-start gap-3 flex-1">
           <div className="w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
             <Users className="w-4 h-4 text-brand-600" />
@@ -81,7 +81,7 @@ export default function MentorAssignment() {
 
       {/* AI Matching Banner */}
       {showAISuggestions && (
-        <div className="bg-linear-to-r from-brand-50 to-brand-50 border border-brand-200 rounded-2xl p-6 mb-8">
+        <div className="bg-linear-to-r from-brand-50 dark:from-brand-500/10 to-brand-50 dark:to-transparent border border-brand-200 rounded-2xl p-6 mb-8">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-brand-600 rounded-xl flex items-center justify-center shrink-0">
               <Sparkles className="w-6 h-6 text-white" />
@@ -184,7 +184,7 @@ export default function MentorAssignment() {
                       </div>
 
                       {topSuggestion ? (
-                        <div className="p-4 bg-brand-50 border border-brand-200 rounded-xl">
+                        <div className="p-4 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-xl">
                           <div className="flex items-center gap-2 mb-3">
                             <Sparkles className="w-4 h-4 text-brand-600" />
                             <span className="text-brand-900 text-sm">

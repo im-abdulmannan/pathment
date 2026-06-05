@@ -317,7 +317,7 @@ export default function CohortReview() {
                 <div className="space-y-2">
                   {pending.map((item, i) => (
                     <div key={item.submissionId} onClick={() => setFocus(i)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${i === focus ? 'border-brand-300 bg-brand-50/40' : 'border-slate-200'}`}>
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer ${i === focus ? 'border-brand-300 bg-brand-50 dark:bg-brand-500/10/40 dark:bg-brand-500/10' : 'border-slate-200'}`}>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-slate-900 truncate">{item.title}</p>
                         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -349,7 +349,7 @@ export default function CohortReview() {
             <div className="flex gap-2">
               {(['present', 'absent', 'excused'] as Attendance[]).map((s) => (
                 <button key={s} onClick={() => mark(s)}
-                  className={`flex-1 px-2 py-1.5 rounded-lg border text-xs font-medium capitalize transition-colors ${attendance[mentee!.id] === s ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                  className={`flex-1 px-2 py-1.5 rounded-lg border text-xs font-medium capitalize transition-colors ${attendance[mentee!.id] === s ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/10 text-brand-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
                   {s}
                 </button>
               ))}

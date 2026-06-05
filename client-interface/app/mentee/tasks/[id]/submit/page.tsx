@@ -212,7 +212,7 @@ export default function TaskSubmission({ params }: PageProps) {
             </div>
             <p className="text-slate-600">{taskDescription}</p>
             {taskDeliverable && (
-              <div className="mt-3 p-3 bg-brand-50 border border-brand-200 rounded-lg">
+              <div className="mt-3 p-3 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg">
                 <p className="text-sm text-brand-900"><strong>Deliverable:</strong> {taskDeliverable}</p>
               </div>
             )}

@@ -79,7 +79,7 @@ export default function MenteeMeetings() {
         <>
           {/* Next 1:1 — the one thing that matters most */}
           {next && (
-            <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-card p-5">
+            <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 dark:from-brand-500/10 to-card p-5">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-brand-600 flex flex-col items-center justify-center text-white shrink-0">
                   <CalendarClock className="w-5 h-5" />

@@ -88,7 +88,7 @@ export default function MentorOnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-card to-brand-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 dark:from-brand-500/10 via-card to-brand-50 dark:to-transparent py-12 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -286,7 +286,7 @@ export default function MentorOnboardingPage() {
                     onClick={() => toggleMenteeLevel(level)}
                     className={`p-3 rounded-xl border-2 capitalize transition-all ${
                       formData.preferredMenteeLevel.includes(level)
-                        ? 'border-brand-600 bg-brand-50 text-brand-700'
+                        ? 'border-brand-600 bg-brand-50 dark:bg-brand-500/10 text-brand-700'
                         : 'border-slate-200 text-slate-700 hover:border-slate-300'
                     }`}
                   >

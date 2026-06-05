@@ -289,7 +289,7 @@ export default function TaskDetailsPage({ params }: PageProps) {
             Mentor Feedback
           </h2>
           {feedback.map((fb: any, index: number) => (
-            <div key={fb.id || index} className="p-4 bg-brand-50 border border-brand-200 rounded-lg space-y-3">
+            <div key={fb.id || index} className="p-4 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-brand-500" />

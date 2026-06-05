@@ -81,7 +81,7 @@ export default function MenteeOnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 via-card to-brand-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand-50 dark:from-brand-500/10 via-card to-brand-50 dark:to-transparent py-12 px-4">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -241,7 +241,7 @@ export default function MenteeOnboardingPage() {
                     onClick={() => setFormData({ ...formData, preferredLearningStyle: style.value })}
                     className={`p-4 rounded-xl border-2 text-left transition-all ${
                       formData.preferredLearningStyle === style.value
-                        ? 'border-brand-600 bg-brand-50'
+                        ? 'border-brand-600 bg-brand-50 dark:bg-brand-500/10'
                         : 'border-slate-200 hover:border-slate-300'
                     }`}
                   >

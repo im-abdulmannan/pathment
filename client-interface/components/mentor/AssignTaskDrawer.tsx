@@ -192,7 +192,7 @@ export function AssignTaskDrawer({
   const field = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500';
   const pill = (active: boolean) =>
     `px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-      active ? 'border-brand-400 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'
+      active ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/10 text-brand-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'
     }`;
 
   return (
@@ -336,7 +336,7 @@ export function AssignTaskDrawer({
                       <div className="space-y-2">
                         {localRoadmaps.map((r) => (
                           <button key={r.id} type="button" onClick={() => { setRoadmapId(r.id); setStartStep(0); }}
-                            className={`w-full text-left rounded-xl border p-3 transition-colors ${roadmapId === r.id ? 'border-brand-400 bg-brand-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                            className={`w-full text-left rounded-xl border p-3 transition-colors ${roadmapId === r.id ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/10' : 'border-slate-200 hover:border-slate-300'}`}>
                             <div className="flex items-center gap-2">
                               <Route className="w-4 h-4 text-brand-500 shrink-0" />
                               <span className="text-sm font-medium text-slate-900 truncate">{r.name}</span>

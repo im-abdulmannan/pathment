@@ -95,7 +95,7 @@ function MenteeDashboardInner() {
       {heroTask && (
         <Link
           href={`/mentee/tasks/${heroTask.id}`}
-          className="block rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-brand-50 p-6 hover:border-brand-400 transition-colors"
+          className="block rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 dark:from-brand-500/10 to-brand-50 dark:to-transparent p-6 hover:border-brand-400 transition-colors"
         >
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-medium text-brand-600 uppercase tracking-wide">Next up</span>
@@ -170,7 +170,7 @@ function MenteeDashboardInner() {
         <>
           {/* No enrollment yet — placement is admin/invite-driven now */}
           {enrollments.length === 0 && (
-            <div className="bg-linear-to-br from-brand-50 to-brand-50 border border-brand-200 rounded-2xl p-8 text-center">
+            <div className="bg-linear-to-br from-brand-50 dark:from-brand-500/10 to-brand-50 dark:to-transparent border border-brand-200 rounded-2xl p-8 text-center">
               <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <BookOpen className="w-8 h-8 text-white" />
               </div>

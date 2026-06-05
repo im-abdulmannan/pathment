@@ -48,7 +48,7 @@ export default function AdminRewardsPage() {
             )}
             {gifts.map((g) => (
               <div key={g.id} className="bg-card rounded-2xl border border-slate-200 overflow-hidden flex flex-col">
-                <div className="relative h-32 bg-gradient-to-br from-brand-50 to-slate-100 flex items-center justify-center">
+                <div className="relative h-32 bg-gradient-to-br from-brand-50 dark:from-brand-500/10 to-slate-100 flex items-center justify-center">
                   {g.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={g.imageUrl} alt={g.name} className="w-full h-full object-cover" />

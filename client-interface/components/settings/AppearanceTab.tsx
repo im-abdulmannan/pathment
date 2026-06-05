@@ -53,7 +53,7 @@ export function AppearanceTab() {
               onClick={() => setAccent(p.key)}
               aria-pressed={selected}
               className={`group relative text-left rounded-2xl border p-4 transition-all ${
-                selected ? 'border-brand-400 ring-2 ring-brand-500/30 bg-brand-50/40' : 'border-slate-200 hover:border-slate-300 bg-card'
+                selected ? 'border-brand-400 ring-2 ring-brand-500/30 bg-brand-50/40 dark:bg-brand-500/10' : 'border-slate-200 hover:border-slate-300 bg-card'
               }`}
             >
               <div className="flex items-center justify-between mb-3">

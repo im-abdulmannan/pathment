@@ -118,7 +118,7 @@ export default function MenteeGamificationPage() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-brand-200 bg-linear-to-r from-brand-50 to-cyan-50 p-6">
+      <div className="rounded-2xl border border-brand-200 bg-linear-to-r from-brand-50 dark:from-brand-500/10 to-cyan-50 dark:to-transparent p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <h1 className="text-slate-900 mb-2">Your Progress Arena</h1>
@@ -196,7 +196,7 @@ export default function MenteeGamificationPage() {
                 <div
                   key={entry.id}
                   className={`flex items-center justify-between rounded-xl border p-3 ${
-                    isCurrentUser ? 'border-brand-300 bg-brand-50' : 'border-slate-200'
+                    isCurrentUser ? 'border-brand-300 bg-brand-50 dark:bg-brand-500/10' : 'border-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">

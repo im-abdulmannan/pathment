@@ -287,7 +287,7 @@ export default function AdminInvitesPage() {
         </form>
 
         {createdInviteUrl && (
-          <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 space-y-3">
+          <div className="bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-xl p-4 space-y-3">
             <p className="text-brand-900 text-sm">New invite link generated. Share it securely:</p>
             <div className="flex flex-col md:flex-row gap-2">
               <input
@@ -339,7 +339,7 @@ export default function AdminInvitesPage() {
             onDragLeave={handleDragLeave}
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${isDragging
-              ? 'border-brand-400 bg-brand-50'
+              ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/10'
               : 'border-slate-300 hover:border-brand-300 hover:bg-slate-50'
               }`}
           >

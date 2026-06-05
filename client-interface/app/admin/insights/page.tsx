@@ -34,7 +34,7 @@ export default function AdminInsights() {
       <PageHeader title="Insights" subtitle="Outcomes, fairness and clan comparisons across the org" />
 
       {/* Fairness digest — the org's headline story */}
-      <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 to-card p-5 flex flex-wrap items-start gap-3">
+      <div className="rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 dark:from-brand-500/10 to-card p-5 flex flex-wrap items-start gap-3">
         <span className="w-9 h-9 rounded-xl bg-brand-100 flex items-center justify-center shrink-0">
           <Scale className="w-5 h-5 text-brand-600" />
         </span>

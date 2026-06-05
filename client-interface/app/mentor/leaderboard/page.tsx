@@ -95,7 +95,7 @@ export default function MentorLeaderboard() {
         <>
           {/* Leader spotlight — one feature, not three floating cards */}
           {leader && (
-            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-card p-5 flex items-center gap-4">
+            <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 dark:from-amber-500/10 to-card p-5 flex items-center gap-4">
               <div className="relative shrink-0">
                 <Avatar m={leader} size="lg" />
                 <span className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center ring-2 ring-white">
