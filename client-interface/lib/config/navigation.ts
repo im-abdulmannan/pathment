@@ -105,6 +105,7 @@ export const navigationConfig: Record<string, NavLink[]> = {
       ],
     },
     { path: '/admin/access', icon: ShieldCheck, label: 'Roles & Access', permission: 'access.manage' },
+    { path: '/admin/library', icon: BookOpen, label: 'Library' },
     { path: '/admin/mentor-spec', icon: Compass, label: 'Mentor Spec' },
     { path: '/admin/settings', icon: Settings, label: 'Settings', permission: 'system.settings' },
   ],
@@ -164,6 +165,7 @@ export const navigationConfig: Record<string, NavLink[]> = {
       children: [
         { path: '/mentee/community', icon: Users, label: 'Community' },
         { path: '/mentee/announcements', icon: Megaphone, label: 'Announcements' },
+        { path: '/mentee/library', icon: BookOpen, label: 'Library' },
       ],
     },
     { path: '/mentee/settings', icon: Settings, label: 'Settings' },

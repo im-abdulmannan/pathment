@@ -383,6 +383,27 @@ html[data-accent='graphite'] {
   font-style: italic;
 }
 
+/* Rendered rich-text content (read mode) — mirrors the editor's styling so a
+   Library article / saved HTML looks identical to how it was written. */
+.rich-content { color: var(--color-slate-700); line-height: 1.7; }
+.rich-content > :first-child { margin-top: 0; }
+.rich-content p { margin: 0.75rem 0; }
+.rich-content h1 { font-size: 1.75rem; font-weight: 700; margin: 1.25rem 0 0.5rem; color: var(--color-slate-900); }
+.rich-content h2 { font-size: 1.375rem; font-weight: 600; margin: 1.1rem 0 0.5rem; color: var(--color-slate-900); }
+.rich-content h3 { font-size: 1.15rem; font-weight: 600; margin: 0.9rem 0 0.4rem; color: var(--color-slate-900); }
+.rich-content ul, .rich-content ol { padding-left: 1.5rem; margin: 0.75rem 0; }
+.rich-content ul { list-style-type: disc; }
+.rich-content ol { list-style-type: decimal; }
+.rich-content li { margin: 0.3rem 0; }
+.rich-content a { color: var(--color-brand-600); text-decoration: underline; }
+.rich-content a:hover { color: var(--color-brand-700); }
+.rich-content strong { font-weight: 700; color: var(--color-slate-900); }
+.rich-content em { font-style: italic; }
+.rich-content blockquote { border-left: 3px solid var(--color-slate-300); padding-left: 1rem; margin: 1rem 0; color: var(--color-slate-500); font-style: italic; }
+.rich-content code { background-color: var(--color-slate-100); color: var(--color-slate-800); padding: 0.125rem 0.3rem; border-radius: 0.25rem; font-family: var(--font-mono), monospace; font-size: 0.875em; }
+.rich-content pre { background-color: #1f2937; color: #f3f4f6; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0; overflow-x: auto; }
+.rich-content pre code { background: transparent; color: inherit; padding: 0; }
+
 /* Sonner toast description visibility fix */
 [data-sonner-toast] [data-description] {
   opacity: 1 !important;

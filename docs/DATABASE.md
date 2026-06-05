@@ -821,8 +821,8 @@ erDiagram
 ## 12. System & Community feed (`models/system/`)
 
 Cross-cutting platform tables: the scoped community feed (clan/cohort/program/global),
-announcements, settings, audit, file uploads, org policies, and bring-your-own-key AI
-connections.
+announcements, settings, audit, file uploads, the Mentor Spec handbook (`OrgPolicy`), and
+bring-your-own-key AI connections.
 
 ```mermaid
 erDiagram

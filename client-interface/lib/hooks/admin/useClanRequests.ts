@@ -20,12 +20,9 @@ export interface CrossClanItem {
   note: string | null;
   at: string;
 }
-export interface OrgPolicy { id: string; title: string; category: string | null; body: string }
-
 export interface UseClanRequestsReturn {
   requests: ChangeRequest[];
   crossClan: CrossClanItem[];
-  policies: OrgPolicy[];
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
@@ -34,7 +31,6 @@ export interface UseClanRequestsReturn {
 export function useClanRequests(): UseClanRequestsReturn {
   const [requests, setRequests] = useState<ChangeRequest[]>([]);
   const [crossClan, setCrossClan] = useState<CrossClanItem[]>([]);
-  const [policies, setPolicies] = useState<OrgPolicy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,7 +41,6 @@ export function useClanRequests(): UseClanRequestsReturn {
       const res = await clanRequestsApi.overview();
       setRequests(res?.data?.requests ?? []);
       setCrossClan(res?.data?.crossClan ?? []);
-      setPolicies(res?.data?.policies ?? []);
     } catch {
       setError('Failed to load clan requests');
     } finally {
@@ -57,5 +52,5 @@ export function useClanRequests(): UseClanRequestsReturn {
     fetchAll();
   }, [fetchAll]);
 
-  return { requests, crossClan, policies, loading, error, refetch: fetchAll };
+  return { requests, crossClan, loading, error, refetch: fetchAll };
 }

@@ -10,6 +10,8 @@ export interface LibraryDoc {
   url: string | null;
   readMins: number | null;
   pinned: boolean;
+  hasContent: boolean;
+  content?: string;
   updatedAt: string;
 }
 

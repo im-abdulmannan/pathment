@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Crown, Loader2, Search, Shield, Trash2, UserPlus, Users2, X } from 'lucide-react';
+import { Crown, HeartHandshake, Loader2, Search, Shield, Trash2, UserPlus, Users2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { apiClient } from '@/lib/services/api-client';
 import { clanApi } from '@/lib/services/clan-api';
+import { clanRequestsApi } from '@/lib/services/clan-requests-api';
 import { extractApiErrorMessage } from '@/lib/utils/api-error';
 import { Drawer } from '@/components/shared/Drawer';
 
@@ -148,8 +149,184 @@ function ClanTeamCard({ clanId, myRole }: { clanId: string; myRole: string }) {
         )}
       </div>
 
+      {canManage && <CrossClanSection clanId={clanId} clanName={clan.name} />}
+
       {adding && <AddTeamMemberDrawer clanId={clanId} onClose={() => setAdding(false)} onAdded={() => { setAdding(false); load(); }} />}
     </div>
+  );
+}
+
+interface CrossClan { id: string; kind: string; user: string | null; fromClan: string | null; toClan: string | null; note: string | null; at: string }
+
+const KIND_LABEL: Record<string, string> = {
+  cover: 'Cover',
+  specialist: 'Specialist',
+  co_mentee_access: 'Mentee access',
+};
+
+/** Lead-mentor view: who is covering / helping THIS clan, plus a way to request cover. */
+function CrossClanSection({ clanId, clanName }: { clanId: string; clanName: string }) {
+  const [rows, setRows] = useState<CrossClan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+
+  const load = useCallback(() => {
+    setLoading(true);
+    clanRequestsApi.listCrossClan(clanId)
+      .then((r: any) => setRows(r.data?.crossClan || []))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [clanId]);
+  useEffect(load, [load]);
+
+  const remove = async (id: string, label: string) => {
+    if (!confirm(`Remove cross-clan help from ${label}?`)) return;
+    try { await clanRequestsApi.removeCrossClan(id); toast.success('Removed'); load(); }
+    catch (e) { toast.error(extractApiErrorMessage(e, 'Could not remove')); }
+  };
+
+  return (
+    <div className="mt-6 border-t border-slate-100 pt-5">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400 inline-flex items-center gap-1.5">
+            <HeartHandshake className="w-3.5 h-3.5" /> Cover &amp; cross-clan help
+          </p>
+          <p className="text-xs text-slate-500 mt-1">Bring in a mentor from another clan to cover or lend a hand.</p>
+        </div>
+        <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 dark:bg-brand-500/15 px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-100 shrink-0">
+          <UserPlus className="w-4 h-4" /> Request cover
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="py-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-brand-600" /></div>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-slate-400">No cover or cross-clan helpers right now.</p>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-2">
+          {rows.map((c) => {
+            const incoming = c.toClan === clanName;
+            return (
+              <div key={c.id} className="flex items-start justify-between rounded-xl border border-slate-200 px-3 py-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-slate-900 truncate">{c.user || 'Someone'}</p>
+                    <span className="text-[11px] rounded-full bg-slate-100 text-slate-600 px-1.5 py-0.5">{KIND_LABEL[c.kind] || c.kind}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 truncate">
+                    {incoming ? 'Helping this clan' : `Lent to ${c.toClan || 'another clan'}`}
+                    {c.fromClan ? ` · from ${c.fromClan}` : ''}
+                  </p>
+                  {c.note && <p className="text-xs text-slate-400 mt-0.5 truncate">{c.note}</p>}
+                </div>
+                <button onClick={() => remove(c.id, c.user || 'this person')} className="p-1.5 rounded-md text-rose-500 hover:bg-rose-50 shrink-0" aria-label="Remove"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {adding && <AddCoverDrawer clanId={clanId} clanName={clanName} onClose={() => setAdding(false)} onAdded={() => { setAdding(false); load(); }} />}
+    </div>
+  );
+}
+
+function AddCoverDrawer({ clanId, clanName, onClose, onAdded }: { clanId: string; clanName: string; onClose: () => void; onAdded: () => void }) {
+  const [kind, setKind] = useState<'cover' | 'specialist' | 'co_mentee_access'>('cover');
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<{ id: string; firstName: string; lastName: string; email: string; role: string }[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [picked, setPicked] = useState<{ id: string; firstName: string; lastName: string; email: string } | null>(null);
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) { setResults([]); return; }
+    const t = setTimeout(() => {
+      setSearching(true);
+      apiClient.get<any>('/messaging/users/search', { params: { q } })
+        .then((r) => setResults(r.data?.users || []))
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const add = async () => {
+    if (!picked) { toast.error('Pick a person'); return; }
+    setSaving(true);
+    try {
+      await clanRequestsApi.createCrossClan({ kind, userId: picked.id, toClanId: clanId, note: note.trim() || undefined });
+      toast.success(`${name(picked)} will help ${clanName}`);
+      onAdded();
+    } catch (e) { toast.error(extractApiErrorMessage(e, 'Could not request cover')); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <Drawer open onClose={onClose} title="Request cross-clan cover" subtitle={`Someone to help ${clanName}`}
+      footer={
+        <div className="flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-200 text-slate-700 text-sm">Cancel</button>
+          <button onClick={add} disabled={saving || !picked} className="px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium disabled:opacity-50 inline-flex items-center gap-2">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Request
+          </button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Kind of help</label>
+          <div className="grid grid-cols-3 gap-2">
+            {(['cover', 'specialist', 'co_mentee_access'] as const).map((k) => (
+              <button key={k} type="button" onClick={() => setKind(k)}
+                className={`rounded-lg border px-2 py-2 text-xs ${kind === k ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/15 text-brand-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
+                {KIND_LABEL[k]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Who will help</label>
+          {picked ? (
+            <div className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium text-slate-900">{name(picked)}</p>
+                <p className="text-xs text-slate-500">{picked.email}</p>
+              </div>
+              <button onClick={() => setPicked(null)} className="p-1.5 rounded-md hover:bg-slate-100 text-slate-400"><X className="w-4 h-4" /></button>
+            </div>
+          ) : (
+            <>
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or email…" className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm bg-card focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              </div>
+              <div className="mt-2 max-h-56 overflow-y-auto divide-y divide-slate-100">
+                {searching ? (
+                  <div className="py-6 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-brand-600" /></div>
+                ) : results.length === 0 ? (
+                  <p className="py-6 text-center text-sm text-slate-400">{query.trim().length < 2 ? 'Type to search.' : 'No matches.'}</p>
+                ) : results.map((u) => (
+                  <button key={u.id} onClick={() => { setPicked(u); setResults([]); setQuery(''); }} className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-50">
+                    <p className="text-sm font-medium text-slate-900">{name(u)}</p>
+                    <p className="text-xs text-slate-500">{u.email} · {u.role}</p>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Note <span className="text-slate-400 font-normal">(optional)</span></label>
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="e.g. covering while I'm on leave next week" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-card focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        </div>
+      </div>
+    </Drawer>
   );
 }
 

@@ -7,9 +7,19 @@ const list = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('Library retrieved', { documents }));
 });
 
+const getOne = catchAsync(async (req, res) => {
+  const document = await libraryService.get(req.params.id);
+  res.status(200).json(successResponse('Document retrieved', { document }));
+});
+
 const create = catchAsync(async (req, res) => {
   const document = await libraryService.create(req.body, `${req.user.firstName} ${req.user.lastName}`.trim());
   res.status(201).json(successResponse('Document added', { document }, 201));
+});
+
+const update = catchAsync(async (req, res) => {
+  const document = await libraryService.update(req.params.id, req.body);
+  res.status(200).json(successResponse('Document updated', { document }));
 });
 
 const togglePin = catchAsync(async (req, res) => {
@@ -21,4 +31,4 @@ const remove = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('Document removed', await libraryService.remove(req.params.id)));
 });
 
-module.exports = { list, create, togglePin, remove };
+module.exports = { list, getOne, create, update, togglePin, remove };

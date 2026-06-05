@@ -4,8 +4,15 @@ const c = require('../controllers/clanRequestsController');
 const { authenticate } = require('../middlewares/auth');
 const { requirePermission } = require('../middlewares/authz');
 const { PERMISSIONS } = require('../config/permissions');
+const authzService = require('../services/authzService');
+const { models } = require('../db');
 
 const adminOnly = [authenticate, requirePermission(PERMISSIONS.CLAN_MANAGE_MEMBERS)];
+// Clan-scoped: admins (org) pass anywhere; a LEAD MENTOR passes for their own clan.
+const onTargetClan = (getClanId) => requirePermission(
+  PERMISSIONS.CLAN_MANAGE_MEMBERS,
+  async (req) => authzService.scopeOfClan(await getClanId(req))
+);
 
 router.get('/', adminOnly, c.overview);
 
@@ -13,10 +20,12 @@ router.get('/', adminOnly, c.overview);
 router.post('/requests', authenticate, c.createRequest);
 router.patch('/requests/:id/resolve', adminOnly, c.resolveRequest);
 
-// Cross-clan assignments + policies (admin).
-router.post('/cross-clan', adminOnly, c.createCrossClan);
-router.delete('/cross-clan/:id', adminOnly, c.removeCrossClan);
-router.post('/policies', adminOnly, c.createPolicy);
-router.delete('/policies/:id', adminOnly, c.removePolicy);
+// Cross-clan: admins manage org-wide; a clan's lead mentor manages cover for THEIR clan.
+router.get('/cross-clan', authenticate, onTargetClan((req) => req.query.clanId), c.listCrossClan);
+router.post('/cross-clan', authenticate, onTargetClan((req) => req.body.toClanId), c.createCrossClan);
+router.delete('/cross-clan/:id', authenticate, onTargetClan(async (req) => {
+  const a = await models.CrossClanAssignment.findByPk(req.params.id);
+  return a ? a.toClanId : null;
+}), c.removeCrossClan);
 
 module.exports = router;

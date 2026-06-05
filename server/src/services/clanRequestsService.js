@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { models, sequelize } = require('../db');
 const { NotFoundError, ValidationError } = require('../utils/errors/errorTypes');
 const clanService = require('./clanService');
@@ -7,7 +8,7 @@ const fullName = (u) => (u ? `${u.firstName} ${u.lastName}`.trim() : null);
 /** Admin clan operations: change requests, cross-clan assignments, policies. */
 class ClanRequestsService {
   async overview() {
-    const [requests, crossClan, policies] = await Promise.all([
+    const [requests, crossClan] = await Promise.all([
       models.ClanChangeRequest.findAll({
         order: [['status', 'ASC'], ['created_at', 'DESC']],
         include: [
@@ -23,8 +24,7 @@ class ClanRequestsService {
           { model: models.Clan, as: 'fromClan', attributes: ['name'] },
           { model: models.Clan, as: 'toClan', attributes: ['name'] }
         ]
-      }),
-      models.OrgPolicy.findAll({ order: [['created_at', 'DESC']] })
+      })
     ]);
 
     return {
@@ -46,8 +46,7 @@ class ClanRequestsService {
         toClan: c.toClan?.name || null,
         note: c.note,
         at: c.createdAt
-      })),
-      policies: policies.map((p) => ({ id: p.id, title: p.title, category: p.category, body: p.body }))
+      }))
     };
   }
 
@@ -84,32 +83,54 @@ class ClanRequestsService {
 
   async createCrossClan(data, createdBy) {
     if (!data.kind) throw new ValidationError('kind is required');
+    // A cross-clan assignment must name WHO is helping and WHICH clan — otherwise
+    // it grants nothing (the authz engine derives co-mentor access from these).
+    if (!data.userId) throw new ValidationError('Select the person who will help');
+    if (!data.toClanId) throw new ValidationError('Select the clan they will help');
+
+    const [user, toClan] = await Promise.all([
+      models.User.findByPk(data.userId),
+      models.Clan.findByPk(data.toClanId)
+    ]);
+    if (!user) throw new NotFoundError('User not found');
+    if (!toClan) throw new NotFoundError('Target clan not found');
+    if (data.fromClanId && !(await models.Clan.findByPk(data.fromClanId))) {
+      throw new ValidationError('From-clan not found');
+    }
+
     return models.CrossClanAssignment.create({
       kind: data.kind,
-      userId: data.userId || null,
+      userId: data.userId,
       fromClanId: data.fromClanId || null,
-      toClanId: data.toClanId || null,
+      toClanId: data.toClanId,
       note: data.note || null,
       createdBy
     });
+  }
+
+  /** Cross-clan assignments touching a specific clan (for the lead mentor's view). */
+  async listCrossClanForClan(clanId) {
+    if (!clanId) return [];
+    const rows = await models.CrossClanAssignment.findAll({
+      where: { [Op.or]: [{ toClanId: clanId }, { fromClanId: clanId }] },
+      order: [['created_at', 'DESC']],
+      include: [
+        { model: models.User, as: 'user', attributes: ['firstName', 'lastName'] },
+        { model: models.Clan, as: 'fromClan', attributes: ['name'] },
+        { model: models.Clan, as: 'toClan', attributes: ['name'] }
+      ]
+    });
+    return rows.map((c) => ({
+      id: c.id, kind: c.kind, user: fullName(c.user),
+      fromClan: c.fromClan?.name || null, toClan: c.toClan?.name || null,
+      note: c.note, at: c.createdAt
+    }));
   }
 
   async removeCrossClan(id) {
     const a = await models.CrossClanAssignment.findByPk(id);
     if (!a) throw new NotFoundError('Assignment not found');
     await a.destroy();
-    return { removed: true };
-  }
-
-  async createPolicy(data, createdBy) {
-    if (!data.title || !data.body) throw new ValidationError('title and body are required');
-    return models.OrgPolicy.create({ title: data.title, category: data.category || null, body: data.body, createdBy });
-  }
-
-  async removePolicy(id) {
-    const p = await models.OrgPolicy.findByPk(id);
-    if (!p) throw new NotFoundError('Policy not found');
-    await p.destroy();
     return { removed: true };
   }
 }

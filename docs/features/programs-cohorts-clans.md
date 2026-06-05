@@ -18,16 +18,16 @@ enrollments). `Cohort` (intake season — see [Intake](./intake-and-assessments.
 ## Backend
 - **Programs (`/api/programs`):** list (public sees published+public; admins/creators see all), detail, create/clone (mentor+admin), update/delete (ownership-checked), stats, enrollments.
 - **Clans (`/api/clans`):** list, detail, `me/memberships`, `mentor/programs`, `health` + `insights` (`analytics.view`), create (`clan.create`), update + member add/remove (`clan.manage_members` scoped to the clan). `clanService.addMember(clanId,{userId,role})` is how a co-mentor/core-team member is added — and the authz engine derives that person's clan permissions from the membership.
-- **Clan requests (`/api/clan-requests`, mostly `clan.manage_members`):** change-request create (mentee) + resolve; cross-clan create/remove; org policies.
+- **Clan requests (`/api/clan-requests`):** change-request create (mentee) + resolve (admin); **cross-clan list/create/remove** gated by `clan.manage_members` *scoped to the target clan* — so admins manage org-wide **and a clan's lead mentor self-serves cover for their own clan**.
 
 ## Frontend
-- **Admin:** `/admin/programs/list` + `/admin/programs/[id]`, `/admin/clans`, `/admin/requests` (change requests, cross-clan, policies), `/admin/insights` (clan health/fairness).
-- **Mentor:** `/mentor/programs` (+ `[id]`) — programs they run; **`/mentor/clan-team`** — manage their clan's co-mentors/core-team (lead mentors only).
+- **Admin:** `/admin/programs/list` + `/admin/programs/[id]`, `/admin/clans`, `/admin/requests` (change requests, cross-clan), `/admin/insights` (clan health/fairness).
+- **Mentor:** `/mentor/programs` (+ `[id]`) — programs they run; **`/mentor/clan-team`** — manage their clan's co-mentors/core-team **and request cross-clan cover/specialist help** for their clan (lead mentors only).
 - **Mentee:** sees their clan implicitly (via enrollment + community space).
 
 ## Role flows
 - **Admin:** creates programs, opens cohorts, creates clans, assigns lead mentors, places mentees (via accept/enrollment), resolves clan change requests, and sets up cross-clan help (cover/specialist).
-- **Lead mentor:** runs their clan — adds **co-mentors / core-team** on the Clan Team page, renames the clan; reviews/mentors its members.
+- **Lead mentor:** runs their clan — adds **co-mentors / core-team** on the Clan Team page, **requests cross-clan cover** (e.g. while on leave) which grants the helper temporary co-mentor access to the clan, renames the clan; reviews/mentors its members.
 - **Co-mentor:** mentors within the clan (review tasks, see mentees) but **cannot** change membership.
 - **Mentee:** belongs to one clan; can request a clan change (admin resolves).
 

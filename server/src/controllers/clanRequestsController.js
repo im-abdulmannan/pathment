@@ -17,6 +17,11 @@ const resolveRequest = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('Request resolved', { request }));
 });
 
+const listCrossClan = catchAsync(async (req, res) => {
+  const crossClan = await clanRequestsService.listCrossClanForClan(req.query.clanId);
+  res.status(200).json(successResponse('Cross-clan assignments', { crossClan }));
+});
+
 const createCrossClan = catchAsync(async (req, res) => {
   const assignment = await clanRequestsService.createCrossClan(req.body, req.user.id);
   res.status(201).json(successResponse('Assignment created', { assignment }, 201));
@@ -26,13 +31,4 @@ const removeCrossClan = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('Assignment removed', await clanRequestsService.removeCrossClan(req.params.id)));
 });
 
-const createPolicy = catchAsync(async (req, res) => {
-  const policy = await clanRequestsService.createPolicy(req.body, req.user.id);
-  res.status(201).json(successResponse('Policy created', { policy }, 201));
-});
-
-const removePolicy = catchAsync(async (req, res) => {
-  res.status(200).json(successResponse('Policy removed', await clanRequestsService.removePolicy(req.params.id)));
-});
-
-module.exports = { overview, createRequest, resolveRequest, createCrossClan, removeCrossClan, createPolicy, removePolicy };
+module.exports = { overview, createRequest, resolveRequest, listCrossClan, createCrossClan, removeCrossClan };

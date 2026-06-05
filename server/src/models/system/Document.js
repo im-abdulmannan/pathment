@@ -13,6 +13,9 @@ module.exports = (sequelize, DataTypes) => {
       validate: { isIn: [['guidance', 'reading', 'template', 'policy']] }
     },
     summary: { type: DataTypes.TEXT, allowNull: true },
+    // Rich-text article body (HTML from the editor). Optional — an item can be a
+    // written article, an external link (url), or both.
+    content: { type: DataTypes.TEXT, allowNull: true },
     author: { type: DataTypes.STRING(150), allowNull: true },
     url: { type: DataTypes.TEXT, allowNull: true },
     readMins: { type: DataTypes.INTEGER, allowNull: true, field: 'read_mins' },

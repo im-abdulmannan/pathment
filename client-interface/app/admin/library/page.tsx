@@ -2,6 +2,6 @@
 
 import LibraryView from '@/components/shared/library/LibraryView';
 
-export default function MentorLibrary() {
+export default function AdminLibrary() {
   return <LibraryView canCurate />;
 }

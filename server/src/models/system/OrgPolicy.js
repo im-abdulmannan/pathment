@@ -1,7 +1,7 @@
 module.exports = (sequelize, DataTypes) => {
   /**
-   * OrgPolicy — an organization policy (e.g. clan-change cooldown, capacity
-   * rules) shown in the admin ClanRequests area.
+   * OrgPolicy — a single-row store for org-level authored content. Currently used
+   * only for the Mentor Spec handbook (category `mentor_spec`); see mentorSpecService.
    */
   const OrgPolicy = sequelize.define('OrgPolicy', {
     id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
