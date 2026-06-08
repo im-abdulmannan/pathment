@@ -68,6 +68,8 @@ export default function CohortReview() {
   const [session, setSession] = useState<ReviewSession | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [sessions, setSessions] = useState<ReviewSessionSummary[]>([]);
+  // Mentees already given an "up next" heads-up this visit (avoid double-pinging).
+  const [pinged, setPinged] = useState<Set<string>>(new Set());
   const [focus, setFocus] = useState(0);
   const [blockers, setBlockers] = useState<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
   const [note, setNote] = useState('');
@@ -311,6 +313,21 @@ export default function CohortReview() {
     catch { setSessions([]); }
   }, []);
 
+  // Give the next mentee a heads-up that they're up next, so they're ready.
+  const notifyNext = useCallback(async () => {
+    const next = cohort[idx + 1];
+    if (!next) return;
+    const first = next.name.split(' ')[0];
+    setPinged((p) => new Set(p).add(next.id)); // optimistic
+    try {
+      await mentorApi.nudge(next.id, `Heads up ${first} — you're up next in today's cohort review. Please be ready 🙌`);
+      toast.success(`${first} was told they're up next`);
+    } catch {
+      setPinged((p) => { const n = new Set(p); n.delete(next.id); return n; });
+      toast.error('Could not notify them');
+    }
+  }, [cohort, idx]);
+
   const sendNote = async () => {
     if (!mentee || !note.trim()) return;
     try {
@@ -423,6 +440,20 @@ export default function CohortReview() {
             if (!m) return null;
             return <button key={id} onClick={() => setIdx(cohort.indexOf(m))} className="px-2 py-0.5 rounded-full bg-card border border-amber-300 text-amber-700 text-xs">{m.name.split(' ')[0]}</button>;
           })}
+        </div>
+      )}
+
+      {/* Up next: let the next mentee know it's nearly their turn so they're ready. */}
+      {cohort[idx + 1] && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 dark:bg-slate-800/40 px-4 py-2.5 flex items-center gap-3 text-sm">
+          <span className="inline-flex items-center gap-1.5 text-slate-500 shrink-0"><ChevronRight className="w-4 h-4" />Up next</span>
+          <span className="font-medium text-slate-900 truncate">{cohort[idx + 1].name}</span>
+          <button onClick={notifyNext} disabled={pinged.has(cohort[idx + 1].id)}
+            className="ml-auto shrink-0 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-medium hover:border-brand-300 inline-flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-default">
+            {pinged.has(cohort[idx + 1].id)
+              ? (<><Check className="w-3.5 h-3.5 text-emerald-600" />Notified</>)
+              : (<><Send className="w-3.5 h-3.5" />Let them know they&apos;re next</>)}
+          </button>
         </div>
       )}
 
