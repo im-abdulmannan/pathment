@@ -2,7 +2,7 @@ const express = require('express');
 const Joi = require('joi');
 const gamificationController = require('../controllers/gamificationController');
 const { authenticate, authorize } = require('../middlewares/auth');
-const { requirePermission } = require('../middlewares/authz');
+const { requirePermission, requirePermissionMinScope } = require('../middlewares/authz');
 const { PERMISSIONS } = require('../config/permissions');
 const { validate } = require('../middlewares/validate');
 
@@ -31,7 +31,7 @@ router.post(
 router.post(
   '/badges',
   authenticate,
-  requirePermission(PERMISSIONS.GAMIFICATION_MANAGE),
+  requirePermissionMinScope(PERMISSIONS.GAMIFICATION_MANAGE),
   validate(Joi.object({
     name: Joi.string().max(100).required(),
     description: Joi.string().required(),
@@ -49,7 +49,7 @@ router.post(
 router.post(
   '/badges/award',
   authenticate,
-  requirePermission(PERMISSIONS.GAMIFICATION_MANAGE),
+  requirePermissionMinScope(PERMISSIONS.GAMIFICATION_MANAGE),
   validate(Joi.object({
     userId: Joi.string().uuid().required(),
     badgeId: Joi.string().uuid().required(),
@@ -61,7 +61,7 @@ router.post(
 router.post(
   '/setup-badges',
   authenticate,
-  requirePermission(PERMISSIONS.GAMIFICATION_MANAGE),
+  requirePermissionMinScope(PERMISSIONS.GAMIFICATION_MANAGE),
   gamificationController.setupDefaultBadges
 );
 

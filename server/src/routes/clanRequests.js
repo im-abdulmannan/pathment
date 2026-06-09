@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const c = require('../controllers/clanRequestsController');
 const { authenticate } = require('../middlewares/auth');
-const { requirePermission } = require('../middlewares/authz');
+const { requirePermission, requirePermissionMinScope } = require('../middlewares/authz');
 const { PERMISSIONS } = require('../config/permissions');
 const authzService = require('../services/authzService');
 const { models } = require('../db');
 
-const adminOnly = [authenticate, requirePermission(PERMISSIONS.CLAN_MANAGE_MEMBERS)];
+const adminOnly = [authenticate, requirePermissionMinScope(PERMISSIONS.CLAN_MANAGE_MEMBERS)];
 // Clan-scoped: admins (org) pass anywhere; a LEAD MENTOR passes for their own clan.
 const onTargetClan = (getClanId) => requirePermission(
   PERMISSIONS.CLAN_MANAGE_MEMBERS,

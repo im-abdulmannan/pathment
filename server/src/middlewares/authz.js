@@ -53,6 +53,26 @@ function requirePermissionAnyScope(permission) {
   };
 }
 
+/**
+ * Org/program-level admin endpoints (no single resource) that a program_admin
+ * should run but a clan mentor should not. Admits holders of `permission` at
+ * org OR program scope (default), excluding clan/self-scoped holders — so e.g. a
+ * lead_mentor's clan-scoped mentee.manage can't drive an org enrollment action.
+ */
+function requirePermissionMinScope(permission, minLevel = 'program') {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) throw new AuthenticationError('You must be logged in to access this resource');
+      const assignments = req.loadAssignments ? await req.loadAssignments() : undefined;
+      const ok = await authzService.canAtMinScope(req.user, permission, minLevel, { assignments });
+      if (!ok) throw new AuthorizationError('You do not have permission to perform this action');
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
 /** Common scope resolvers for route params (and a couple body-based ones). */
 const scope = {
   clan: (param = 'id') => async (req) => authzService.scopeOfClan(req.params[param]),
@@ -75,4 +95,4 @@ const scope = {
     authzService.scopeOfAnnouncementAudience(req.body && req.body.audience, req.body && req.body.audienceId)
 };
 
-module.exports = { requirePermission, requirePermissionAnyScope, scope };
+module.exports = { requirePermission, requirePermissionAnyScope, requirePermissionMinScope, scope };

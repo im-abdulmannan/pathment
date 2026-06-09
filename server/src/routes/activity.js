@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate } = require('../middlewares/auth');
-const { requirePermission, scope } = require('../middlewares/authz');
+const { requirePermission, requirePermissionMinScope, scope } = require('../middlewares/authz');
 const { PERMISSIONS } = require('../config/permissions');
 const { verifyAccessToken } = require('../utils/jwt');
 const { models } = require('../db');
@@ -63,6 +63,6 @@ router.get('/me/summary', getMySummary);
 router.get('/mentee/:id/summary', requirePermission(PERMISSIONS.MENTEE_VIEW, scope.mentee('id')), getMenteeSummary);
 
 // Admin-only aggregate overview
-router.get('/admin/overview', requirePermission(PERMISSIONS.ANALYTICS_VIEW), getAdminOverview);
+router.get('/admin/overview', requirePermissionMinScope(PERMISSIONS.ANALYTICS_VIEW), getAdminOverview);
 
 module.exports = router;

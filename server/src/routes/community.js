@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const communityController = require('../controllers/communityController');
 const { authenticate } = require('../middlewares/auth');
-const { requirePermission } = require('../middlewares/authz');
+const { requirePermission, requirePermissionMinScope } = require('../middlewares/authz');
 const { PERMISSIONS } = require('../config/permissions');
 const upload = require('../middlewares/upload');
 
@@ -39,7 +39,7 @@ router.delete('/comments/:id', communityController.deleteComment);
 
 // Moderation
 router.post('/reports', communityController.report);
-router.get('/reports', requirePermission(PERMISSIONS.COMMUNITY_MODERATE), communityController.listReports);
-router.patch('/reports/:id', requirePermission(PERMISSIONS.COMMUNITY_MODERATE), communityController.resolveReport);
+router.get('/reports', requirePermissionMinScope(PERMISSIONS.COMMUNITY_MODERATE), communityController.listReports);
+router.patch('/reports/:id', requirePermissionMinScope(PERMISSIONS.COMMUNITY_MODERATE), communityController.resolveReport);
 
 module.exports = router;

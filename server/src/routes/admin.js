@@ -4,7 +4,7 @@ const adminController = require('../controllers/adminController');
 const { validateBody, validateQuery } = require('../middlewares/validate');
 const { adminSchemas } = require('../validations/adminValidation');
 const { authenticate, authorize } = require('../middlewares/auth');
-const { requirePermission } = require('../middlewares/authz');
+const { requirePermission, requirePermissionMinScope } = require('../middlewares/authz');
 const { PERMISSIONS } = require('../config/permissions');
 
 /**
@@ -15,7 +15,7 @@ const { PERMISSIONS } = require('../config/permissions');
 router.get(
   '/dashboard/stats',
   authenticate,
-  requirePermission(PERMISSIONS.ANALYTICS_VIEW),
+  requirePermissionMinScope(PERMISSIONS.ANALYTICS_VIEW),
   adminController.getDashboardStats
 );
 
@@ -32,7 +32,7 @@ router.post(
 router.post(
   '/invites',
   authenticate,
-  requirePermission(PERMISSIONS.INVITE_CREATE),
+  requirePermissionMinScope(PERMISSIONS.INVITE_CREATE),
   validateBody(adminSchemas.createInvite),
   adminController.createRegistrationInvite
 );
@@ -41,7 +41,7 @@ router.post(
 router.post(
   '/invites/bulk',
   authenticate,
-  requirePermission(PERMISSIONS.INVITE_CREATE),
+  requirePermissionMinScope(PERMISSIONS.INVITE_CREATE),
   validateBody(adminSchemas.bulkInvite),
   adminController.bulkRegistrationInvites
 );
@@ -50,7 +50,7 @@ router.post(
 router.get(
   '/invites',
   authenticate,
-  requirePermission(PERMISSIONS.INVITE_CREATE),
+  requirePermissionMinScope(PERMISSIONS.INVITE_CREATE),
   validateQuery(adminSchemas.inviteListQuery),
   adminController.listRegistrationInvites
 );
@@ -59,7 +59,7 @@ router.get(
 router.post(
   '/invites/:id/revoke',
   authenticate,
-  requirePermission(PERMISSIONS.INVITE_CREATE),
+  requirePermissionMinScope(PERMISSIONS.INVITE_CREATE),
   adminController.revokeRegistrationInvite
 );
 

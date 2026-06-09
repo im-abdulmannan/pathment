@@ -143,6 +143,16 @@ async function mkUser(role, n) {
   const sEnr = await authzService.scopeOfEnrollment(enrB.id);
   ok('scopeOfEnrollment → right clan + program', sEnr.clanId === clan.id && sEnr.programId === program.id);
 
+  // ── minScope: program_admin can run org/program admin endpoints; clan roles can't ─
+  const progAdmin = await mkUser('mentor', 7);
+  await accessService.grantRole({ userId: progAdmin.id, role: 'program_admin', scopeType: 'program', scopeId: program.id }, adminUser.id);
+  const fProg = await models.User.findByPk(progAdmin.id);
+  ok('minScope: program_admin passes invite.create', await authzService.canAtMinScope(fProg, P.INVITE_CREATE, 'program'));
+  ok('minScope: program_admin passes mentee.manage', await authzService.canAtMinScope(fProg, P.MENTEE_MANAGE, 'program'));
+  ok('minScope: super_admin passes invite.create', await authzService.canAtMinScope(fAdmin, P.INVITE_CREATE, 'program'));
+  ok('minScope: lead_mentor BLOCKED from mentee.manage (clan < program)', !(await authzService.canAtMinScope(fLead, P.MENTEE_MANAGE, 'program')));
+  ok('minScope: lead_mentor BLOCKED from analytics admin (clan < program)', !(await authzService.canAtMinScope(fLead, P.ANALYTICS_VIEW, 'program')));
+
   // ── Audit: the grant + revoke were recorded with an actor ──────────────────
   const auditCount = await models.AuditLog.count({ where: { action: ['ROLE_GRANTED', 'ROLE_REVOKED'] } });
   ok('grant/revoke produced audit rows', auditCount >= 2);

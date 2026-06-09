@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const c = require('../controllers/linearRoadmapController');
 const { authenticate } = require('../middlewares/auth');
-const { requirePermission } = require('../middlewares/authz');
+const { requirePermission, requirePermissionMinScope } = require('../middlewares/authz');
 const { PERMISSIONS } = require('../config/permissions');
 
-const adminOnly = [authenticate, requirePermission(PERMISSIONS.ROADMAP_AUTHOR)];
+const adminOnly = [authenticate, requirePermissionMinScope(PERMISSIONS.ROADMAP_AUTHOR)];
 
 // AI-draft roadmap steps from a brief (any authenticated mentor/admin author).
 // Generating a draft is harmless; saving is still gated by the routes below.

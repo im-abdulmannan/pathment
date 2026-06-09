@@ -23,6 +23,9 @@ function invalidateCustomRoles() { _customRoles = null; }
 // clan roles like lead_mentor). Used by hasAdminAccess().
 const ADMIN_TIER_ROLES = new Set(['super_admin', 'program_admin', 'intake_manager', 'people_admin', 'moderator', 'analyst']);
 
+// Scope hierarchy for "minimum scope" checks (org is broadest).
+const SCOPE_RANK = { org: 3, program: 2, clan: 1, self: 0 };
+
 const roleExists = (key, custom) => Boolean(ROLES[key] || (custom && custom[key]));
 const grants = (key, perm, custom) => {
   if (ROLES[key]) return roleGrants(key, perm);
@@ -193,6 +196,21 @@ class AuthzService {
     }
 
     return [...caps];
+  }
+
+  /**
+   * Does the user hold `permission` at AT LEAST `minLevel` scope (org > program >
+   * clan > self)? For org/program-level admin endpoints that a program_admin
+   * should run but a clan mentor should not — e.g. mentee.manage is held by both
+   * a program_admin (program) and a lead_mentor (clan); minLevel 'program' admits
+   * the former and rejects the latter. Doesn't need a specific resource.
+   */
+  async canAtMinScope(user, permission, minLevel = 'program', opts = {}) {
+    if (!user) return false;
+    const min = SCOPE_RANK[minLevel] ?? 2;
+    const custom = await loadCustomRoles();
+    const assignments = opts.assignments || (await this.getAssignments(user));
+    return assignments.some((a) => grants(a.role, permission, custom) && (SCOPE_RANK[a.scopeType] ?? 0) >= min);
   }
 
   /** Called by accessService when custom roles change. */

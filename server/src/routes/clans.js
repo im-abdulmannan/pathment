@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const clanController = require('../controllers/clanController');
 const { authenticate, authorize } = require('../middlewares/auth');
-const { requirePermission, scope } = require('../middlewares/authz');
+const { requirePermission, requirePermissionMinScope, scope } = require('../middlewares/authz');
 const { PERMISSIONS } = require('../config/permissions');
 
 // Current user's clan memberships (any authenticated role).
@@ -15,8 +15,8 @@ router.get('/mentor/programs', authenticate, authorize(['mentor', 'admin']), cla
 router.get('/', authenticate, clanController.listClans);
 
 // Org-wide clan-health snapshot + insights (analytics consumers).
-router.get('/health', authenticate, requirePermission(PERMISSIONS.ANALYTICS_VIEW), clanController.clanHealth);
-router.get('/insights', authenticate, requirePermission(PERMISSIONS.ANALYTICS_VIEW), clanController.clanInsights);
+router.get('/health', authenticate, requirePermissionMinScope(PERMISSIONS.ANALYTICS_VIEW), clanController.clanHealth);
+router.get('/insights', authenticate, requirePermissionMinScope(PERMISSIONS.ANALYTICS_VIEW), clanController.clanInsights);
 
 // Clan detail.
 router.get('/:id', authenticate, clanController.getClan);
