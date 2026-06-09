@@ -14,7 +14,10 @@ const getAllMentees = catchAsync(async (req, res) => {
   const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
   const offset = (pageNum - 1) * limitNum;
 
-  const where = { role: 'mentee', status: 'active' };
+  // Include suspended users so they stay visible and can be UNsuspended — only
+  // hide pending/deleted accounts. (Filtering to active-only made a just-suspended
+  // person vanish, so there was no row left to un-suspend.)
+  const where = { role: 'mentee', status: { [Op.in]: ['active', 'suspended'] } };
 
   // A program_admin sees only mentees enrolled in their programs (org admins: all).
   const programScope = await authzService.adminProgramScope(req.user, {

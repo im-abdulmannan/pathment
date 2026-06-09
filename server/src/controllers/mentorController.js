@@ -12,7 +12,9 @@ const getAllMentors = catchAsync(async (req, res) => {
   const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
   const offset = (pageNum - 1) * limitNum;
 
-  const where = { role: 'mentor', status: 'active' };
+  // Include suspended mentors so they stay visible and can be UNsuspended
+  // (active-only filtering made a just-suspended person disappear from the list).
+  const where = { role: 'mentor', status: { [Op.in]: ['active', 'suspended'] } };
 
   const searchConditions = search ? {
     [Op.or]: [

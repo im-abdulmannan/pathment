@@ -43,12 +43,17 @@ const columns: DataTableColumn<MentorListItem>[] = [
     key: 'firstName',
     label: 'Mentor',
     render: (_, row) => (
-      <AvatarWithInitials
-        firstName={row.firstName}
-        lastName={row.lastName}
-        email={row.email}
-        colorClass="bg-purple-100 text-purple-700"
-      />
+      <div className="flex items-center gap-2">
+        <AvatarWithInitials
+          firstName={row.firstName}
+          lastName={row.lastName}
+          email={row.email}
+          colorClass="bg-purple-100 text-purple-700"
+        />
+        {row.status === 'suspended' && (
+          <span className="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-medium dark:bg-amber-500/10 dark:text-amber-300">Suspended</span>
+        )}
+      </div>
     ),
   },
   {

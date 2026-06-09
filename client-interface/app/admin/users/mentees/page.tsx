@@ -44,12 +44,17 @@ const columns: DataTableColumn<MenteeListItem>[] = [
     key: 'firstName',
     label: 'Mentee',
     render: (_, row) => (
-      <AvatarWithInitials
-        firstName={row.firstName}
-        lastName={row.lastName}
-        email={row.email}
-        colorClass="bg-brand-100 text-brand-700"
-      />
+      <div className="flex items-center gap-2">
+        <AvatarWithInitials
+          firstName={row.firstName}
+          lastName={row.lastName}
+          email={row.email}
+          colorClass="bg-brand-100 text-brand-700"
+        />
+        {row.status === 'suspended' && (
+          <span className="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[11px] font-medium dark:bg-amber-500/10 dark:text-amber-300">Suspended</span>
+        )}
+      </div>
     ),
   },
   {
