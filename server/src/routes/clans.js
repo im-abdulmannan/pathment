@@ -36,4 +36,11 @@ router.delete('/:id/members/:userId', authenticate, requirePermission(PERMISSION
 router.get('/:id/available', authenticate, requirePermission(PERMISSIONS.CLAN_MANAGE_MEMBERS, scope.clan('id')), clanController.availableMembers);
 router.post('/:id/invite', authenticate, requirePermission(PERMISSIONS.CLAN_MANAGE_MEMBERS, scope.clan('id')), clanController.inviteToClan);
 
+// Candidates for co-mentor / core-team (anyone active, not already in the clan).
+router.get('/:id/candidates', authenticate, requirePermission(PERMISSIONS.CLAN_MANAGE_MEMBERS, scope.clan('id')), clanController.candidates);
+
+// Delegate / revoke custom clan-scoped permissions within this clan (lead mentor or admin).
+router.post('/:id/grants', authenticate, requirePermission(PERMISSIONS.CLAN_MANAGE_MEMBERS, scope.clan('id')), clanController.grantClanRole);
+router.delete('/:id/grants/:assignmentId', authenticate, requirePermission(PERMISSIONS.CLAN_MANAGE_MEMBERS, scope.clan('id')), clanController.revokeClanRole);
+
 module.exports = router;

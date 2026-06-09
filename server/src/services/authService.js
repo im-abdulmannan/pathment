@@ -363,6 +363,14 @@ class AuthService {
     const userResponse = user.toJSON();
     delete userResponse.passwordHash;
 
+    // Derive live capabilities + permissions so the client lands with the right
+    // switcher/areas without a second round-trip.
+    const authzService = require('./authzService');
+    const assignments = await authzService.getAssignments(user);
+    userResponse.capabilities = await authzService.getCapabilities(user, { assignments });
+    userResponse.permissions = await authzService.getPermissionUnion(user);
+    userResponse.canAccessAdmin = await authzService.hasAdminAccess(user, { assignments });
+
     return {
       user: userResponse,
       accessToken,
@@ -615,7 +623,15 @@ class AuthService {
       throw new NotFoundError(AUTH_MESSAGES.USER_NOT_FOUND);
     }
 
-    return user;
+    // Capabilities + permissions are DERIVED from the user's live roles, never
+    // the stored array, so the role switcher and UI gates reflect reality.
+    const authzService = require('./authzService');
+    const assignments = await authzService.getAssignments(user);
+    const json = user.toJSON();
+    json.capabilities = await authzService.getCapabilities(user, { assignments });
+    json.permissions = await authzService.getPermissionUnion(user);
+    json.canAccessAdmin = await authzService.hasAdminAccess(user, { assignments });
+    return json;
   }
 
   /**

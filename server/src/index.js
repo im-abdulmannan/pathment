@@ -56,6 +56,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Seed per-request audit context (IP + user-agent) for downstream audit writes.
 app.use(requestContext);
 
+// Record every state-changing request (who/what/when/result) to audit_logs.
+app.use(require('./middlewares/auditTrail'));
+
 // Request logging in development
 if (process.env.NODE_ENV === 'development') {
   app.use((req, res, next) => {

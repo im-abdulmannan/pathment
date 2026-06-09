@@ -19,6 +19,9 @@ router.delete('/grants/:id', requirePermission(PERMISSIONS.ACCESS_MANAGE), acces
 // Invite a new person with a pre-assigned role (applied on registration).
 router.post('/invites', requirePermission(PERMISSIONS.ACCESS_MANAGE), accessController.inviteWithRole);
 
+// Org-wide audit feed — who did what, when (admins only).
+router.get('/audit', requirePermission(PERMISSIONS.ACCESS_MANAGE), accessController.getAuditLogs);
+
 // Custom (admin-defined) roles
 router.get('/custom-roles', requirePermission(PERMISSIONS.ACCESS_MANAGE), accessController.listCustomRoles);
 router.post('/custom-roles', requirePermission(PERMISSIONS.ACCESS_MANAGE), accessController.createCustomRole);

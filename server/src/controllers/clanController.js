@@ -100,6 +100,41 @@ const availableMembers = catchAsync(async (req, res) => {
 });
 
 /**
+ * GET /api/clans/:id/candidates  (admin / lead mentor of the clan)
+ * Anyone (mentor OR mentee) not already in this clan — the consistent picker for
+ * adding a co-mentor / core-team member.
+ */
+const candidates = catchAsync(async (req, res) => {
+  const people = await clanService.listCandidates(req.params.id, { q: req.query.q });
+  res.status(200).json(successResponse('Candidates', { people }));
+});
+
+/**
+ * POST /api/clans/:id/grants  (admin / lead mentor of the clan)
+ * Delegate a CLAN-SCOPED role (built-in co_mentor/core_team or a custom clan
+ * role) to a user — i.e. give them custom permissions inside this clan. Guarded
+ * against privilege escalation (you can't grant more than you hold here).
+ */
+const grantClanRole = catchAsync(async (req, res) => {
+  const accessService = require('../services/accessService');
+  const assignment = await accessService.grantScopedRoleAsDelegate(
+    { userId: req.body.userId, role: req.body.role, scopeType: 'clan', scopeId: req.params.id },
+    req.user
+  );
+  res.status(201).json(successResponse('Permission granted', { assignment }, 201));
+});
+
+/**
+ * DELETE /api/clans/:id/grants/:assignmentId  (admin / lead mentor of the clan)
+ * Revoke a clan-scoped grant made on this clan.
+ */
+const revokeClanRole = catchAsync(async (req, res) => {
+  const accessService = require('../services/accessService');
+  await accessService.revokeClanGrant(req.params.assignmentId, req.params.id, req.user.id);
+  res.status(200).json(successResponse('Permission revoked', { revoked: true }));
+});
+
+/**
  * POST /api/clans/:id/invite  (admin / lead mentor of the clan)
  * Invite a new person straight into this clan as a mentee.
  */
@@ -120,5 +155,8 @@ module.exports = {
   addMember,
   removeMember,
   availableMembers,
+  candidates,
+  grantClanRole,
+  revokeClanRole,
   inviteToClan
 };

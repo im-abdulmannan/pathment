@@ -109,7 +109,10 @@ function ClanDrawer({ clanId, mentors, mentees, onClose, onChanged }: {
   };
   useEffect(() => { load(); }, [clanId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const options = role === 'mentee' ? mentees : mentors;
+  // Anyone can be a co/lead mentor (mentor OR mentee), so non-mentee roles pick
+  // from everyone (deduped); the mentee role still lists mentees to place.
+  const everyone = Array.from(new Map([...mentors, ...mentees].map((p) => [p.id, p])).values());
+  const options = role === 'mentee' ? mentees : everyone;
 
   const add = async () => {
     if (!userId) { toast.error('Pick a person'); return; }
@@ -163,7 +166,7 @@ function ClanDrawer({ clanId, mentors, mentees, onClose, onChanged }: {
                     <option value="lead_mentor">Lead mentor</option>
                   </select>
                   <select value={userId} onChange={(e) => setUserId(e.target.value)} className={`${field} flex-1 min-w-40`}>
-                    <option value="">Select {role === 'mentee' ? 'mentee' : 'mentor'}</option>
+                    <option value="">Select {role === 'mentee' ? 'mentee' : 'person'}</option>
                     {options.map((p) => <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>)}
                   </select>
                   <button onClick={add} disabled={busy} className="px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-sm inline-flex items-center gap-1.5 disabled:opacity-50">

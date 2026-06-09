@@ -1,6 +1,11 @@
+const { Op } = require('sequelize');
 const { models } = require('../db');
 const { ROLES, roleGrants } = require('../config/roles');
-const { ALL_PERMISSIONS } = require('../config/permissions');
+const { ALL_PERMISSIONS, PERMISSIONS: P } = require('../config/permissions');
+
+// Permissions that mean "this person mentors someone" - holding any of these at
+// a clan/program scope grants the mentor switch (drives getCapabilities).
+const MENTOR_PERMISSIONS = [P.MENTEE_VIEW, P.MENTEE_MANAGE, P.TASK_ASSIGN, P.TASK_REVIEW];
 
 // In-memory cache of admin-defined custom roles (key → { permissions[], scope }).
 // Invalidated by accessService whenever a custom role changes.
@@ -142,19 +147,85 @@ class AuthzService {
    * hold an ORG- or PROGRAM-scoped elevated role (not merely a clan role like a
    * lead mentor). Drives the client's admin entry point + section guard.
    */
-  async hasAdminAccess(user) {
+  async hasAdminAccess(user, opts = {}) {
     if (!user) return false;
-    const caps = Array.isArray(user.capabilities) && user.capabilities.length ? user.capabilities : [user.role];
-    if (caps.includes('admin')) return true;
+    if (user.role === 'admin') return true;
     const custom = await loadCustomRoles();
-    const assignments = await this.getAssignments(user);
+    const assignments = opts.assignments || (await this.getAssignments(user));
     return assignments.some((a) =>
       ['org', 'program'].includes(a.scopeType) && (ADMIN_TIER_ROLES.has(a.role) || Boolean(custom[a.role]))
     );
   }
 
+  /**
+   * The platform "areas" a user may currently enter — the role-switcher list.
+   * DERIVED from real facts on every read (never a stored array), so granting or
+   * revoking a clan role / RoleAssignment / enrollment flips the switch
+   * immediately and self-heals: there is no capability to leave dangling.
+   *   admin  → admin account OR an org/program-tier elevated role
+   *   mentor → mentor account OR any clan/program role that grants mentoring
+   *            power (view/assign/review) OR cross-clan cover (co_mentor@clan)
+   *   mentee → mentee account OR any active (non-dropped) enrollment
+   */
+  async getCapabilities(user, opts = {}) {
+    if (!user) return [];
+    const custom = await loadCustomRoles();
+    const assignments = opts.assignments || (await this.getAssignments(user));
+    const caps = new Set();
+
+    if (await this.hasAdminAccess(user, { assignments })) caps.add('admin');
+
+    const mentorsSomewhere = assignments.some((a) =>
+      ['clan', 'program'].includes(a.scopeType) &&
+      MENTOR_PERMISSIONS.some((perm) => grants(a.role, perm, custom))
+    );
+    if (user.role === 'mentor' || mentorsSomewhere) caps.add('mentor');
+
+    if (user.role === 'mentee') {
+      caps.add('mentee');
+    } else {
+      const enrollment = await models.Enrollment.findOne({
+        where: { menteeId: user.id, status: { [Op.notIn]: ['rejected', 'dropped'] } },
+        attributes: ['id']
+      });
+      if (enrollment) caps.add('mentee');
+    }
+
+    return [...caps];
+  }
+
   /** Called by accessService when custom roles change. */
   invalidateCustomRoles() { invalidateCustomRoles(); }
+
+  /**
+   * Can `user` legitimately view mentee `menteeId`? True when it's themselves, an
+   * admin, their directly-matched mentee, or a mentee in a clan where the user
+   * holds a mentoring role (MENTEE_VIEW at that clan's scope — covers lead/co
+   * mentor and cross-clan cover). This is the ownership check that replaces the
+   * old "primary role === mentee" data-scoping, so a co-mentor sees the REAL
+   * mentee and can't reach mentees outside their clans.
+   */
+  async canViewMentee(user, menteeId, opts = {}) {
+    if (!user || !menteeId) return false;
+    if (user.id === menteeId) return true;
+
+    const assignments = opts.assignments || (await this.getAssignments(user));
+    if (await this.hasAdminAccess(user, { assignments })) return true;
+
+    const match = await models.MentorMenteeMatch.findOne({
+      where: { mentorId: user.id, menteeId, status: 'active' }, attributes: ['id']
+    });
+    if (match) return true;
+
+    const menteeClans = await models.ClanMembership.findAll({
+      where: { userId: menteeId, status: 'active' }, attributes: ['clanId']
+    });
+    for (const c of menteeClans) {
+      const resource = await this.scopeOfClan(c.clanId);
+      if (await this.can(user, P.MENTEE_VIEW, resource, { assignments })) return true;
+    }
+    return false;
+  }
 
   // ── Scope resolvers (locate a resource in the hierarchy) ─────────────────────
   /** A clan resource: covers clan + its program. */

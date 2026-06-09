@@ -1,6 +1,8 @@
 const enrollmentService = require('../services/enrollmentService');
 const { successResponse } = require('../utils/responses');
 const { catchAsync } = require('../middlewares/errorHandler');
+const authzService = require('../services/authzService');
+const { AuthorizationError } = require('../utils/errors/errorTypes');
 
 /**
  * Get enrollment stats (overall counts, not paginated)
@@ -17,15 +19,25 @@ exports.getEnrollmentStats = catchAsync(async (req, res) => {
  */
 exports.getEnrollments = catchAsync(async (req, res) => {
   const { status, programId, menteeId, search, page, limit } = req.query;
-  
-  // If user is a mentee, restrict to their own enrollments
+
+  // Scope by what the requester may SEE, not by their primary role (a co-mentor
+  // has a 'mentee' primary role but legitimately views others). Asking for a
+  // specific mentee requires permission to view them; asking broadly with no
+  // mentor/admin capability falls back to "your own enrollments only".
   let filters = { status, programId, menteeId, search };
-  if (req.user.role === 'mentee') {
-    filters.menteeId = req.user.id;
+  if (menteeId && menteeId !== req.user.id) {
+    const allowed = await authzService.canViewMentee(req.user, menteeId, {
+      assignments: req.loadAssignments ? await req.loadAssignments() : undefined
+    });
+    if (!allowed) throw new AuthorizationError("You cannot view this mentee's enrollments");
+  } else {
+    const caps = req.loadCapabilities ? await req.loadCapabilities() : [req.user.role];
+    const privileged = caps.includes('mentor') || caps.includes('admin');
+    if (!privileged) filters.menteeId = req.user.id;
   }
-  
+
   const pagination = { page: parseInt(page) || 1, limit: parseInt(limit) || 20 };
-  
+
   const result = await enrollmentService.getEnrollments(filters, pagination);
   res.status(200).json(successResponse('Enrollments retrieved successfully', result));
 });

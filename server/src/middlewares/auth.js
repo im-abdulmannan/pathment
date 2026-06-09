@@ -2,6 +2,8 @@ const { AuthenticationError, AuthorizationError } = require('../utils/errors/err
 const { verifyAccessToken } = require('../utils/jwt');
 const { catchAsync } = require('./errorHandler');
 const { models } = require('../db');
+const authzService = require('../services/authzService');
+const { setRequestUser } = require('../utils/auditContext');
 
 /**
  * Authenticate user with JWT
@@ -38,6 +40,28 @@ const authenticate = catchAsync(async (req, res, next) => {
 
   // Attach user to request
   req.user = user;
+
+  // Lazily resolve the user's scoped roles, memoized for the whole request, so
+  // authorize()/requirePermission() share ONE fetch and routes that don't gate
+  // on roles pay nothing (the DB is cross-region — avoid per-request overhead).
+  req.loadAssignments = () => {
+    if (!req._assignmentsPromise) req._assignmentsPromise = authzService.getAssignments(user);
+    return req._assignmentsPromise;
+  };
+  // Capabilities are DERIVED on demand (never the stored array), so a revoked
+  // role stops granting access immediately — no stale capability survives.
+  req.loadCapabilities = () => {
+    if (!req._capabilitiesPromise) {
+      req._capabilitiesPromise = req.loadAssignments()
+        .then((assignments) => authzService.getCapabilities(user, { assignments }));
+    }
+    return req._capabilitiesPromise;
+  };
+
+  // Seed the audit context with WHO is acting (ip/ua/requestId were seeded by
+  // requestContext before auth ran). Every audit write now records the actor.
+  setRequestUser(user.id);
+
   next();
 });
 
@@ -47,26 +71,29 @@ const authenticate = catchAsync(async (req, res, next) => {
  */
 const authorize = (roles) => {
   const allowedRoles = Array.isArray(roles) ? roles : [roles];
-  return (req, res, next) => {
-    if (!req.user) {
-      throw new AuthenticationError('You must be logged in to access this resource');
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        throw new AuthenticationError('You must be logged in to access this resource');
+      }
+
+      // Capability-aware authorization against the user's LIVE capabilities
+      // (derived from real roles, not the stored array), so a revoked clan/mentor
+      // role can no longer reach role-scoped resources. A user who is e.g. both
+      // admin and mentee still passes either view.
+      const capabilities = req.loadCapabilities
+        ? await req.loadCapabilities()
+        : (Array.isArray(req.user.capabilities) && req.user.capabilities.length ? req.user.capabilities : [req.user.role]);
+
+      const permitted = allowedRoles.some((r) => capabilities.includes(r));
+      if (!permitted) {
+        throw new AuthorizationError(`This resource is only accessible to ${allowedRoles.join(', ')} users`);
+      }
+
+      next();
+    } catch (err) {
+      next(err);
     }
-
-    // Capability-aware authorization: a user passes if any of their platform
-    // capabilities matches an allowed role. `capabilities` always includes the
-    // primary `role` (enforced by the User model hook + migration backfill),
-    // so single-role users behave exactly as before, while a user who is e.g.
-    // both admin and mentee can reach role-scoped resources for either view.
-    const capabilities = Array.isArray(req.user.capabilities) && req.user.capabilities.length
-      ? req.user.capabilities
-      : [req.user.role];
-
-    const permitted = allowedRoles.some((r) => capabilities.includes(r));
-    if (!permitted) {
-      throw new AuthorizationError(`This resource is only accessible to ${allowedRoles.join(', ')} users`);
-    }
-
-    next();
   };
 };
 

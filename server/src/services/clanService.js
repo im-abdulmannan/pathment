@@ -227,6 +227,36 @@ class ClanService {
   }
 
   /**
+   * Candidates a lead/admin can add to THIS clan as a co-mentor / core-team
+   * member: ANY active user (mentor OR mentee — anyone can co-mentor) who isn't
+   * already an active member here. This is the single, consistent picker source
+   * for both the admin and the mentor "add to team" UIs.
+   */
+  async listCandidates(clanId, { q } = {}) {
+    const { Op } = require('sequelize');
+    const members = await models.ClanMembership.findAll({ where: { clanId, status: 'active' }, attributes: ['userId'] });
+    const memberIds = [...new Set(members.map((m) => m.userId).filter(Boolean))];
+
+    const where = { status: 'active' };
+    if (memberIds.length) where.id = { [Op.notIn]: memberIds };
+    if (q && q.trim()) {
+      const like = { [Op.iLike]: `%${q.trim()}%` };
+      where[Op.and] = [{ [Op.or]: [{ firstName: like }, { lastName: like }, { email: like }] }];
+    }
+    const users = await models.User.findAll({
+      where,
+      attributes: ['id', 'firstName', 'lastName', 'email', 'role', 'profilePictureUrl'],
+      order: [['firstName', 'ASC']],
+      limit: 25
+    });
+    return users.map((u) => ({
+      id: u.id, firstName: u.firstName, lastName: u.lastName,
+      name: `${u.firstName} ${u.lastName}`.trim() || u.email,
+      email: u.email, role: u.role, profilePictureUrl: u.profilePictureUrl || null
+    }));
+  }
+
+  /**
    * Lead mentor invites a new person straight into their clan as a mentee.
    * Reuses the registration-invite flow, pre-scoped to the clan + its program.
    */

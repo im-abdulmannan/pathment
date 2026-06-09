@@ -522,13 +522,15 @@ function AddTeamMemberDrawer({ clanId, onClose, onAdded }: { clanId: string; onC
     if (q.length < 2) { setResults([]); return; }
     const t = setTimeout(() => {
       setSearching(true);
-      apiClient.get<any>('/messaging/users/search', { params: { q } })
-        .then((r) => setResults(r.data?.users || []))
+      // Consistent candidate pool: ANYONE active (mentor or mentee) not already
+      // in this clan — the same source the admin picker uses.
+      apiClient.get<any>(`/clans/${clanId}/candidates`, { params: { q } })
+        .then((r) => setResults(r.data?.people || []))
         .catch(() => setResults([]))
         .finally(() => setSearching(false));
     }, 250);
     return () => clearTimeout(t);
-  }, [query]);
+  }, [query, clanId]);
 
   const add = async () => {
     if (!picked) { toast.error('Pick a person'); return; }

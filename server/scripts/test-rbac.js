@@ -1,0 +1,122 @@
+/* eslint-disable no-console */
+// Phase-by-phase RBAC verification against a real DB.
+// Run with: DATABASE_URL=... DB_SSL=false node scripts/test-rbac.js
+const { sequelize, models } = require('../src/db');
+const authzService = require('../src/services/authzService');
+const clanService = require('../src/services/clanService');
+const accessService = require('../src/services/accessService');
+
+let pass = 0, fail = 0;
+const ok = (name, cond) => { (cond ? pass++ : fail++); console.log(`${cond ? '✓' : '✗ FAIL'}  ${name}`); };
+const caps = async (u) => (await authzService.getCapabilities(await models.User.findByPk(u.id))).sort();
+
+async function mkUser(role, n) {
+  return models.User.create({
+    email: `${role}${n}+${Date.now()}@test.local`, passwordHash: 'x', role,
+    firstName: role, lastName: `#${n}`, status: 'active', emailVerified: true
+  });
+}
+
+(async () => {
+  await sequelize.authenticate();
+
+  const lead = await mkUser('mentor', 1);
+  const program = await models.Program.create({
+    createdBy: lead.id, name: 'Test Program', description: 'For RBAC tests',
+    type: 'mentorship', status: 'published', totalDurationWeeks: 8
+  });
+  const clan = await models.Clan.create({ name: 'Clan A', programId: program.id, leadMentorId: lead.id, createdBy: lead.id, status: 'active' });
+
+  // ── Phase 1: a plain enrolled mentee ───────────────────────────────────────
+  const mentee = await mkUser('mentee', 1);
+  await models.Enrollment.create({ menteeId: mentee.id, programId: program.id, status: 'active', enrolledAt: new Date() });
+  ok('enrolled mentee → [mentee]', JSON.stringify(await caps(mentee)) === JSON.stringify(['mentee']));
+
+  // Add that mentee as a CO-MENTOR of the clan (the exact prod scenario).
+  await clanService.addMember(clan.id, { userId: mentee.id, role: 'co_mentor' });
+  ok('mentee added as co_mentor → [mentee, mentor]', JSON.stringify(await caps(mentee)) === JSON.stringify(['mentee', 'mentor']));
+
+  // Remove them — Bug 3: the mentor switch must DISAPPEAR (self-heal).
+  await clanService.removeMember(clan.id, mentee.id);
+  ok('co_mentor removed → mentor capability gone → [mentee]', JSON.stringify(await caps(mentee)) === JSON.stringify(['mentee']));
+
+  // ── Lead mentor (real mentor account, leads a clan) ────────────────────────
+  ok('lead mentor → includes mentor', (await caps(lead)).includes('mentor'));
+
+  // ── Admin via scoped RoleAssignment (not stored capability) ────────────────
+  const staff = await mkUser('mentee', 2);
+  await models.Enrollment.create({ menteeId: staff.id, programId: program.id, status: 'active', enrolledAt: new Date() });
+  ok('staff before grant → no admin', !(await caps(staff)).includes('admin'));
+  const grant = await accessService.grantRole({ userId: staff.id, role: 'program_admin', scopeType: 'program', scopeId: program.id }, lead.id);
+  ok('granted program_admin → admin capability appears', (await caps(staff)).includes('admin'));
+  await accessService.revokeRole(grant.id, lead.id);
+  ok('revoked program_admin → admin capability gone', !(await caps(staff)).includes('admin'));
+
+  // ── Phase 3: canViewMentee (Bug 1 — co-mentor must see the REAL mentee) ─────
+  // Put the original mentee back as co_mentor of clan A, and add menteeB to clan A.
+  await clanService.addMember(clan.id, { userId: mentee.id, role: 'co_mentor' });
+  const menteeB = await mkUser('mentee', 3);
+  await models.Enrollment.create({ menteeId: menteeB.id, programId: program.id, status: 'active', enrolledAt: new Date() });
+  await clanService.addMember(clan.id, { userId: menteeB.id, role: 'mentee' });
+
+  // A second clan with its own mentee (menteeC) — out of the co-mentor's reach.
+  const clanB = await models.Clan.create({ name: 'Clan B', programId: program.id, leadMentorId: lead.id, createdBy: lead.id, status: 'active' });
+  const menteeC = await mkUser('mentee', 4);
+  await models.Enrollment.create({ menteeId: menteeC.id, programId: program.id, status: 'active', enrolledAt: new Date() });
+  await clanService.addMember(clanB.id, { userId: menteeC.id, role: 'mentee' });
+
+  const freshMentee = await models.User.findByPk(mentee.id);
+  const freshMenteeB = await models.User.findByPk(menteeB.id);
+  ok('co-mentor CAN view a mentee in their clan', await authzService.canViewMentee(freshMentee, menteeB.id));
+  ok('co-mentor CANNOT view a mentee in another clan', !(await authzService.canViewMentee(freshMentee, menteeC.id)));
+  ok('co-mentor viewing self → true', await authzService.canViewMentee(freshMentee, mentee.id));
+  ok('plain mentee CANNOT view another mentee', !(await authzService.canViewMentee(freshMenteeB, menteeC.id)));
+  const adminUser = await mkUser('admin', 8);
+  ok('admin CAN view any mentee', await authzService.canViewMentee(adminUser, menteeC.id));
+
+  // ── Phase 4: candidates + lead-mentor delegation (Bug 2) ───────────────────
+  // Make `lead` an actual lead_mentor MEMBER of clan A so they hold clan powers.
+  await clanService.addMember(clan.id, { userId: lead.id, role: 'lead_mentor' });
+  const freshLead = await models.User.findByPk(lead.id);
+
+  const cands = await clanService.listCandidates(clan.id);
+  const candIds = cands.map((c) => c.id);
+  ok('candidates EXCLUDE existing clan members', !candIds.includes(mentee.id) && !candIds.includes(menteeB.id));
+  ok('candidates INCLUDE an outsider (any role)', candIds.includes(menteeC.id));
+
+  // Lead mentor delegates co_mentor (clan-scoped) to menteeB — a subset of their powers.
+  const delegated = await accessService.grantScopedRoleAsDelegate(
+    { userId: menteeB.id, role: 'co_mentor', scopeType: 'clan', scopeId: clan.id }, freshLead
+  );
+  ok('lead mentor CAN delegate co_mentor in their clan', !!delegated?.id);
+  ok('delegated co_mentor → menteeB gains mentor switch', (await caps(menteeB)).includes('mentor'));
+
+  // Anti-escalation: a clan delegate cannot hand out an org/program (admin) role.
+  let escalationBlocked = false;
+  try {
+    await accessService.grantScopedRoleAsDelegate(
+      { userId: menteeB.id, role: 'program_admin', scopeType: 'clan', scopeId: clan.id }, freshLead
+    );
+  } catch (e) { escalationBlocked = true; }
+  ok('lead mentor CANNOT delegate an admin/program role (no escalation)', escalationBlocked);
+
+  // Revoke guard: can revoke this clan's grant; refuses a foreign assignment.
+  await accessService.revokeClanGrant(delegated.id, clan.id, lead.id);
+  ok('delegated grant revoked → menteeB loses mentor switch', !(await caps(menteeB)).includes('mentor'));
+
+  // ── Audit: the grant + revoke were recorded with an actor ──────────────────
+  const auditCount = await models.AuditLog.count({ where: { action: ['ROLE_GRANTED', 'ROLE_REVOKED'] } });
+  ok('grant/revoke produced audit rows', auditCount >= 2);
+
+  console.log(`\n${pass} passed, ${fail} failed`);
+  // Cleanup test data (everything this script touched).
+  await models.AuditLog.destroy({ where: {} });
+  await models.RoleAssignment.destroy({ where: {} });
+  await models.ClanMembership.destroy({ where: {} });
+  await models.Enrollment.destroy({ where: {} });
+  await models.Clan.destroy({ where: {} });
+  await models.User.destroy({ where: { email: { [require('sequelize').Op.like]: '%@test.local' } } });
+  await models.Program.destroy({ where: { name: 'Test Program' } });
+  await sequelize.close();
+  process.exit(fail ? 1 : 0);
+})().catch((e) => { console.error('TEST CRASH:', e); process.exit(1); });

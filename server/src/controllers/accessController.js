@@ -64,7 +64,13 @@ const myPermissions = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('My permissions', { permissions, canAccessAdmin }));
 });
 
+const getAuditLogs = catchAsync(async (req, res) => {
+  const { actorUserId, action, entityType, from, to, limit, offset } = req.query;
+  const result = await accessService.listAuditLogs({ actorUserId, action, entityType, from, to, limit, offset });
+  res.status(200).json(successResponse('Audit logs', result));
+});
+
 module.exports = {
   getRoleCatalog, getUserAccess, grantRole, revokeRole, myPermissions, inviteWithRole,
-  listCustomRoles, createCustomRole, updateCustomRole, deleteCustomRole
+  listCustomRoles, createCustomRole, updateCustomRole, deleteCustomRole, getAuditLogs
 };

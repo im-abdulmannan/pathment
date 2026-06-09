@@ -12,9 +12,19 @@ const runWithRequestContext = (ctx, fn) => store.run(ctx, fn);
 const getRequestContext = () => store.getStore() || {};
 
 /**
- * The single audit writer. Merges IP/user-agent from the current request context
- * when the caller didn't provide them, and never throws (audit must not break a
- * real request).
+ * Record the acting user on the current request context. Called by the auth
+ * middleware once the JWT is resolved, so audit writes that don't pass an
+ * explicit userId still attribute the action to who actually did it.
+ */
+const setRequestUser = (userId) => {
+  const ctx = store.getStore();
+  if (ctx) ctx.userId = userId;
+};
+
+/**
+ * The single audit writer. Merges actor/IP/user-agent from the current request
+ * context when the caller didn't provide them, and never throws (audit must not
+ * break a real request).
  */
 async function createAuditLog(data) {
   try {
@@ -22,6 +32,7 @@ async function createAuditLog(data) {
     const ctx = getRequestContext();
     await models.AuditLog.create({
       ...data,
+      userId: data.userId || ctx.userId || null,
       ipAddress: data.ipAddress || ctx.ip || null,
       userAgent: data.userAgent || ctx.userAgent || null,
     });
@@ -30,4 +41,4 @@ async function createAuditLog(data) {
   }
 }
 
-module.exports = { runWithRequestContext, getRequestContext, createAuditLog };
+module.exports = { runWithRequestContext, getRequestContext, setRequestUser, createAuditLog };

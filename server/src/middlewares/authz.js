@@ -14,9 +14,11 @@ function requirePermission(permission, scopeResolver = null) {
     try {
       if (!req.user) throw new AuthenticationError('You must be logged in to access this resource');
 
-      if (!req._assignments) {
-        req._assignments = await authzService.getAssignments(req.user);
-      }
+      // Reuse the per-request memoized loader seeded by authenticate(); fall back
+      // to a direct fetch if this route somehow runs without it.
+      req._assignments = req.loadAssignments
+        ? await req.loadAssignments()
+        : (req._assignments || (await authzService.getAssignments(req.user)));
       const resource = scopeResolver ? await scopeResolver(req) : null;
 
       const allowed = await authzService.can(req.user, permission, resource, { assignments: req._assignments });

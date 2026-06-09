@@ -145,6 +145,48 @@ class AccessService {
     };
   }
 
+  /**
+   * Org-wide audit feed for admins: who did what, to which entity, when - with
+   * the actor resolved to a name. Supports filtering by actor, action substring,
+   * entity type, and a date window.
+   */
+  async listAuditLogs({ actorUserId, action, entityType, from, to, limit = 50, offset = 0 } = {}) {
+    const where = {};
+    if (actorUserId) where.userId = actorUserId;
+    if (entityType) where.entityType = entityType;
+    if (action) where.action = { [Op.iLike]: `%${action}%` };
+    if (from || to) {
+      where.createdAt = {};
+      if (from) where.createdAt[Op.gte] = new Date(from);
+      if (to) where.createdAt[Op.lte] = new Date(to);
+    }
+
+    const result = await models.AuditLog.findAndCountAll({
+      where,
+      order: [['createdAt', 'DESC']],
+      limit: Math.min(Number(limit) || 50, 200),
+      offset: Number(offset) || 0,
+      include: [{ model: models.User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'email', 'role'], required: false }]
+    });
+
+    return {
+      total: result.count,
+      logs: result.rows.map((l) => ({
+        id: l.id,
+        action: l.action,
+        entityType: l.entityType,
+        entityId: l.entityId,
+        actor: l.user
+          ? { id: l.user.id, name: `${l.user.firstName} ${l.user.lastName}`.trim(), email: l.user.email, role: l.user.role }
+          : null,
+        status: l.newValues?.status ?? null,
+        details: l.newValues || null,
+        ipAddress: l.ipAddress,
+        createdAt: l.createdAt
+      }))
+    };
+  }
+
   async grantRole({ userId, role, scopeType = 'org', scopeId = null }, grantedBy) {
     const isCustom = !ROLES[role] && (await models.CustomRole.findOne({ where: { key: role } }));
     if (!ROLES[role] && !isCustom) throw new ValidationError(`Unknown role: ${role}`);
@@ -169,6 +211,65 @@ class AccessService {
     }).catch(() => {});
 
     return assignment;
+  }
+
+  /** The permission list a role confers (built-in or custom). '*' = all. */
+  async _permissionsOfRole(role) {
+    if (ROLES[role]) {
+      const perms = ROLES[role].permissions || [];
+      return perms.includes('*') ? [...ALL_PERMISSIONS] : perms;
+    }
+    const custom = await models.CustomRole.findOne({ where: { key: role }, attributes: ['permissions'] });
+    return custom ? (custom.permissions || []) : null; // null = unknown role
+  }
+
+  /**
+   * Grant a role on behalf of a non-super-admin DELEGATE (e.g. a lead mentor
+   * assigning permissions inside their own clan). Two guardrails on top of the
+   * normal grant:
+   *   1. The role's scope must match `scopeType` (a clan delegate can only hand
+   *      out clan-scoped roles — never an org/admin role).
+   *   2. No privilege escalation: the granter must ALREADY hold every permission
+   *      the role confers AT THAT SCOPE. So a lead mentor can only delegate a
+   *      subset of what they themselves can do in that clan.
+   * The route still gates that the granter manages the scope (CLAN_MANAGE_MEMBERS).
+   */
+  async grantScopedRoleAsDelegate({ userId, role, scopeType, scopeId }, granter) {
+    if (!SCOPE_LEVELS.includes(scopeType)) throw new ValidationError('Invalid scope type');
+
+    const builtIn = ROLES[role];
+    const customRole = builtIn ? null : await models.CustomRole.findOne({ where: { key: role } });
+    if (!builtIn && !customRole) throw new ValidationError(`Unknown role: ${role}`);
+    const roleScope = builtIn ? builtIn.scope : customRole.scopeLevel;
+    if (roleScope !== scopeType) {
+      throw new ValidationError(`A ${role} role is ${roleScope}-scoped and cannot be granted at ${scopeType} scope`);
+    }
+
+    const perms = await this._permissionsOfRole(role);
+    const resource = scopeType === 'clan'
+      ? await authzService.scopeOfClan(scopeId)
+      : scopeType === 'program' ? { programId: scopeId } : null;
+    for (const perm of perms) {
+      // eslint-disable-next-line no-await-in-loop
+      if (!(await authzService.can(granter, perm, resource))) {
+        throw new ValidationError("You can't grant a role with more permissions than you hold here");
+      }
+    }
+
+    return this.grantRole({ userId, role, scopeType, scopeId }, granter.id);
+  }
+
+  /**
+   * Revoke a clan-scoped grant on behalf of a clan delegate — refuses to touch
+   * anything that isn't a clan-scoped assignment ON THIS clan.
+   */
+  async revokeClanGrant(assignmentId, clanId, revokedBy) {
+    const assignment = await models.RoleAssignment.findByPk(assignmentId);
+    if (!assignment) throw new NotFoundError('Assignment not found');
+    if (assignment.scopeType !== 'clan' || assignment.scopeId !== clanId) {
+      throw new ValidationError('That grant does not belong to this clan');
+    }
+    return this.revokeRole(assignmentId, revokedBy);
   }
 
   async revokeRole(assignmentId, revokedBy) {

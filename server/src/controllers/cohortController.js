@@ -2,6 +2,8 @@ const { catchAsync } = require('../middlewares/errorHandler');
 const { successResponse } = require('../utils/responses');
 const cohortService = require('../services/cohortService');
 const submissionService = require('../services/submissionService');
+const authzService = require('../services/authzService');
+const { AuthorizationError } = require('../utils/errors/errorTypes');
 
 /**
  * GET /api/mentor/cohort
@@ -38,6 +40,14 @@ const getCohortReportSummary = catchAsync(async (req, res) => {
  * grouped tasks + derived summary/signals).
  */
 const getMenteeProfile = catchAsync(async (req, res) => {
+  // Authorize: the requester must actually be allowed to view this mentee
+  // (admin, their match, or a mentee in a clan they mentor). Without this, any
+  // mentor/co-mentor could pull any mentee's full profile.
+  const allowed = await authzService.canViewMentee(req.user, req.params.id, {
+    assignments: req.loadAssignments ? await req.loadAssignments() : undefined
+  });
+  if (!allowed) throw new AuthorizationError('You do not have access to this mentee');
+
   const profile = await cohortService.getMenteeDetail(req.params.id);
   if (!profile) {
     return res.status(404).json({ success: false, message: 'Mentee not found', statusCode: 404 });
