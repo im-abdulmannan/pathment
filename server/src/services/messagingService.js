@@ -222,6 +222,27 @@ class MessagingService {
       return acc;
     }, {});
 
+    // Tag each conversation with the clan(s) its OTHER participants belong to,
+    // so the mentor UI can scope the conversation list by clan. One batched
+    // ClanMembership query for all counterparts.
+    const otherUserIds = new Set();
+    for (const conversation of orderedConversations) {
+      for (const p of (conversation.participants || [])) {
+        if (p.userId && p.userId !== userId) otherUserIds.add(p.userId);
+      }
+    }
+    const clanIdsByUser = new Map();
+    if (otherUserIds.size) {
+      const memberships = await models.ClanMembership.findAll({
+        where: { userId: { [Op.in]: [...otherUserIds] }, status: 'active' },
+        attributes: ['userId', 'clanId']
+      });
+      for (const m of memberships) {
+        if (!clanIdsByUser.has(m.userId)) clanIdsByUser.set(m.userId, new Set());
+        clanIdsByUser.get(m.userId).add(m.clanId);
+      }
+    }
+
     const seenDirectKeys = new Set();
 
     return orderedConversations.flatMap((conversation) => {
@@ -260,6 +281,7 @@ class MessagingService {
           profilePictureUrl: p.user?.profilePictureUrl,
           role: p.user?.role
         })),
+        clanIds: [...new Set(otherParticipants.flatMap((p) => [...(clanIdsByUser.get(p.userId) || [])]))],
         lastMessage: json.lastMessage
       }];
     });

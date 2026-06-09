@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { communityApi, type ScopeType, type PostType, type ReactionType, type CreatePostInput } from '@/lib/services/community-api';
+import { useClan, ALL_CLANS } from '@/lib/context/ClanContext';
 
 export interface CommunitySpace {
   key: string;
@@ -95,6 +96,15 @@ export function useCommunityHub() {
     })();
     return () => { alive = false; };
   }, []);
+
+  // Follow the global clan selector: when it points at a specific clan, jump to
+  // that clan's space here (the user can still pick another space manually after).
+  const { activeClanId } = useClan();
+  useEffect(() => {
+    if (activeClanId === ALL_CLANS) return;
+    const key = `clan:${activeClanId}`;
+    if (spaces.some((s) => s.key === key)) setActiveKey(key);
+  }, [activeClanId, spaces]);
 
   const fetchFeed = useCallback(async () => {
     if (!active) return;

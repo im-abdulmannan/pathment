@@ -48,6 +48,8 @@ export interface ConversationSummary {
   lastMessageAt?: string;
   unreadCount: number;
   participants: ConversationParticipantUser[];
+  /** Clans the other participant(s) belong to — lets the mentor view scope by clan. */
+  clanIds?: string[];
   lastMessage?: ChatMessage;
 }
 

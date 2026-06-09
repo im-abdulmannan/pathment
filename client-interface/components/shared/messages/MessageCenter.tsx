@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { messagingApi } from '@/lib/services/messaging-api';
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/services/socket-client';
 import { useAuth } from '@/lib/context/AuthContext';
+import { useClan, ALL_CLANS } from '@/lib/context/ClanContext';
 import { extractApiErrorMessage } from '@/lib/utils/api-error';
 import type { ChatMessage, ConversationSummary, MessageReaction, SearchableUser } from '@/lib/types/messaging';
 import UserSearchCombobox from './UserSearchCombobox';
@@ -82,6 +83,13 @@ export default function MessageCenter({ role }: MessageCenterProps) {
     () => conversations.find((conversation) => conversation.id === selectedConversationId) || null,
     [conversations, selectedConversationId]
   );
+
+  // Scope the conversation list to the active clan (mentors with 2+ clans).
+  const { activeClanId } = useClan();
+  const visibleConversations = useMemo(() => {
+    if (role !== 'mentor' || activeClanId === ALL_CLANS) return conversations;
+    return conversations.filter((c) => (c.clanIds || []).includes(activeClanId));
+  }, [conversations, role, activeClanId]);
 
   const selectedTitle = useMemo(() => {
     if (!selectedConversation) {
@@ -411,12 +419,14 @@ export default function MessageCenter({ role }: MessageCenterProps) {
             <h2 className="text-slate-900">Conversations</h2>
           </div>
           <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-100">
-            {conversations.length === 0 ? (
+            {visibleConversations.length === 0 ? (
               <div className="p-6 text-sm text-slate-500">
-                No conversations yet. Use a &quot;Message&quot; button from any user card to start one.
+                {role === 'mentor' && activeClanId !== ALL_CLANS && conversations.length > 0
+                  ? 'No conversations with members of this clan.'
+                  : 'No conversations yet. Use a "Message" button from any user card to start one.'}
               </div>
             ) : (
-              conversations.map((conversation) => {
+              visibleConversations.map((conversation) => {
                 const participant = conversation.participants[0];
                 const fullName = `${participant?.firstName || ''} ${participant?.lastName || ''}`.trim();
                 const title = fullName || participant?.email || 'Conversation';
