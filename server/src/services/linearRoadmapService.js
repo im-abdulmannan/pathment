@@ -333,6 +333,30 @@ class LinearRoadmapService {
     return this.getRoadmap(roadmapId);
   }
 
+  /** Replace an org roadmap's whole step set in one call (the shared editor sends
+   * the full list) — mirrors the mentor replaceSteps so both editors behave the
+   * same. Org steps are templates (not assigned), so no assigned-task guard. */
+  async replaceOrgSteps(roadmapId, steps) {
+    await this._assertOrg(roadmapId);
+    this._assertSteps(steps);
+
+    const existing = await models.RoadmapTask.findAll({ where: { roadmapId } });
+    const byId = new Map(existing.map((t) => [t.id, t]));
+    const keep = new Set(steps.filter((s) => s.id && byId.has(s.id)).map((s) => s.id));
+    const toDelete = existing.filter((t) => !keep.has(t.id));
+
+    return sequelize.transaction(async (transaction) => {
+      if (toDelete.length) await models.RoadmapTask.destroy({ where: { id: toDelete.map((t) => t.id) }, transaction });
+      for (let i = 0; i < steps.length; i++) {
+        const s = steps[i];
+        const fields = this._stepToTask(s, roadmapId, i);
+        if (s.id && byId.has(s.id)) await byId.get(s.id).update(fields, { transaction });
+        else await models.RoadmapTask.create(fields, { transaction });
+      }
+      await models.Roadmap.update({ totalTasks: steps.length }, { where: { id: roadmapId }, transaction });
+    }).then(() => this.getRoadmap(roadmapId));
+  }
+
   async deleteOrgRoadmap(roadmapId) {
     await this._assertOrg(roadmapId);
     // Org roadmaps are templates; mentors import a copy, so deleting the org

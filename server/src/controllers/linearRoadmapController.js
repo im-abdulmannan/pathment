@@ -92,6 +92,12 @@ const removeOrgStep = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('Step removed', { roadmap }));
 });
 
+// Replace an org roadmap's whole step set (the shared editor sends the full list).
+const replaceOrgSteps = catchAsync(async (req, res) => {
+  const roadmap = await linearRoadmapService.replaceOrgSteps(req.params.id, req.body?.steps || []);
+  res.status(200).json(successResponse('Steps saved', { roadmap }));
+});
+
 const deleteOrg = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('Org roadmap deleted', await linearRoadmapService.deleteOrgRoadmap(req.params.id)));
 });
@@ -125,6 +131,6 @@ const advance = catchAsync(async (req, res) => {
 
 module.exports = {
   list, getOne, create, updateMeta, addStep, removeStep, importOrg, assign, assignees,
-  listOrg, createOrg, updateOrg, addOrgStep, removeOrgStep, deleteOrg, generate, myRoadmaps,
+  listOrg, createOrg, updateOrg, addOrgStep, removeOrgStep, replaceOrgSteps, deleteOrg, generate, myRoadmaps,
   getLinks, setLinks, advance, replaceSteps, menteeStepStatus
 };

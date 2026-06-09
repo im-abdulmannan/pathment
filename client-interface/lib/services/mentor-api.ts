@@ -76,7 +76,7 @@ export const mentorApi = {
     programId: string;
     description?: string;
     skillTags?: string[];
-    steps: Array<{ title: string; type?: string; brief?: string; description?: string; criteria?: string[]; effort?: string; dueOffsetDays?: number }>;
+    steps: Array<{ title: string; type?: string; brief?: string; description?: string; criteria?: string[]; effort?: string; dueOffsetDays?: number; difficulty?: string; deliverable?: string; pointsBase?: number }>;
   }) => apiClient.post('/mentor/roadmaps', data),
   updateRoadmapMeta: (id: string, data: { name?: string; description?: string; skillTags?: string[] }) =>
     apiClient.patch(`/mentor/roadmaps/${id}`, data),

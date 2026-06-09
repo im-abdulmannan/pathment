@@ -1,6 +1,7 @@
 import { apiClient } from './api-client';
 
 export interface RoadmapStepInput {
+  id?: string;
   title: string;
   type?: string;
   brief?: string;
@@ -8,6 +9,9 @@ export interface RoadmapStepInput {
   criteria?: string[];
   effort?: string;
   dueOffsetDays?: number;
+  difficulty?: string;
+  deliverable?: string;
+  pointsBase?: number;
 }
 
 /** Admin org-roadmap authoring (the shared library mentors import + assign). */
@@ -18,6 +22,7 @@ export const orgRoadmapApi = {
   update: (id: string, data: { name?: string; description?: string; skillTags?: string[]; published?: boolean }) =>
     apiClient.patch(`/roadmaps/org/${id}`, data),
   addStep: (id: string, step: RoadmapStepInput) => apiClient.post(`/roadmaps/org/${id}/steps`, step),
+  replaceSteps: (id: string, steps: RoadmapStepInput[]) => apiClient.put(`/roadmaps/org/${id}/steps`, { steps }),
   removeStep: (id: string, stepId: string) => apiClient.delete(`/roadmaps/org/${id}/steps/${stepId}`),
   remove: (id: string) => apiClient.delete(`/roadmaps/org/${id}`),
 };

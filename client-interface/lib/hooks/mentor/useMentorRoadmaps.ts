@@ -10,6 +10,9 @@ export interface RoadmapStep {
   acceptanceCriteria?: string[];
   effort?: string | null;
   dueOffsetDays?: number | null;
+  difficulty?: string | null;
+  deliverable?: string | null;
+  pointsBase?: number | null;
 }
 
 export interface LinearRoadmap {

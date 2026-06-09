@@ -19,6 +19,7 @@ router.get('/org', adminOnly, c.listOrg);
 router.post('/org', adminOnly, c.createOrg);
 router.patch('/org/:id', adminOnly, c.updateOrg);
 router.post('/org/:id/steps', adminOnly, c.addOrgStep);
+router.put('/org/:id/steps', adminOnly, c.replaceOrgSteps);
 router.delete('/org/:id/steps/:stepId', adminOnly, c.removeOrgStep);
 router.delete('/org/:id', adminOnly, c.deleteOrg);
 

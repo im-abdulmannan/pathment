@@ -11,6 +11,10 @@ export interface OrgRoadmapStep {
   taskOrder: number;
   effort?: string | null;
   dueOffsetDays?: number | null;
+  acceptanceCriteria?: string[];
+  difficulty?: string | null;
+  deliverable?: string | null;
+  pointsBase?: number | null;
 }
 
 export interface OrgRoadmap {
@@ -32,6 +36,7 @@ export interface UseOrgRoadmapsReturn {
   create: (data: { name: string; programId: string; description?: string; skillTags?: string[]; steps: RoadmapStepInput[]; published?: boolean }) => Promise<void>;
   update: (id: string, data: { name?: string; description?: string; skillTags?: string[]; published?: boolean }) => Promise<void>;
   addStep: (id: string, step: RoadmapStepInput) => Promise<void>;
+  replaceSteps: (id: string, steps: RoadmapStepInput[]) => Promise<void>;
   removeStep: (id: string, stepId: string) => Promise<void>;
   setPublished: (id: string, published: boolean) => Promise<void>;
   remove: (id: string) => Promise<void>;
@@ -71,6 +76,11 @@ export function useOrgRoadmaps(): UseOrgRoadmapsReturn {
     await fetchAll();
   }, [fetchAll]);
 
+  const replaceSteps = useCallback(async (id: string, steps: RoadmapStepInput[]) => {
+    await orgRoadmapApi.replaceSteps(id, steps);
+    await fetchAll();
+  }, [fetchAll]);
+
   const removeStep = useCallback(async (id: string, stepId: string) => {
     await orgRoadmapApi.removeStep(id, stepId);
     await fetchAll();
@@ -88,5 +98,5 @@ export function useOrgRoadmaps(): UseOrgRoadmapsReturn {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  return { roadmaps, loading, error, refetch: fetchAll, create, update, addStep, removeStep, setPublished, remove };
+  return { roadmaps, loading, error, refetch: fetchAll, create, update, addStep, replaceSteps, removeStep, setPublished, remove };
 }
