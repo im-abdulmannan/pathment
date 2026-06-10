@@ -126,7 +126,7 @@ export function ReviewDrawer({
               <div>
                 <p className="text-xs font-medium text-slate-500 mb-0.5">The task</p>
                 {looksLikeHtml(item.brief)
-                  ? <div className="prose prose-sm max-w-none text-slate-700" dangerouslySetInnerHTML={{ __html: item.brief }} />
+                  ? <div className="prose prose-sm max-w-none dark:prose-invert text-slate-700 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: item.brief }} />
                   : <p className="text-sm text-slate-700 whitespace-pre-wrap">{item.brief}</p>}
               </div>
             )}

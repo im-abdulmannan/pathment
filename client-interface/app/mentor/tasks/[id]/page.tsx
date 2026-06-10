@@ -159,7 +159,7 @@ export default function MentorTaskDetailsPage({ params }: PageProps) {
               )}
             </div>
             {taskDescription && (descriptionIsHtml ? (
-              <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: taskDescription }} />
+              <div className="prose prose-sm max-w-none dark:prose-invert text-slate-600 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: taskDescription }} />
             ) : (
               <p className="text-slate-600 whitespace-pre-wrap">{taskDescription}</p>
             ))}

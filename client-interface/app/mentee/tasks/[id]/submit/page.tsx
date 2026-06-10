@@ -212,7 +212,7 @@ export default function TaskSubmission({ params }: PageProps) {
               </span>
             </div>
             {taskDescription && (looksLikeHtml(taskDescription)
-              ? <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: taskDescription }} />
+              ? <div className="prose prose-sm max-w-none dark:prose-invert text-slate-600 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: taskDescription }} />
               : <p className="text-slate-600 whitespace-pre-wrap">{taskDescription}</p>)}
             {taskDeliverable && (
               <div className="mt-3 p-3 bg-brand-50 dark:bg-brand-500/10 border border-brand-200 dark:border-brand-500/20 rounded-lg">

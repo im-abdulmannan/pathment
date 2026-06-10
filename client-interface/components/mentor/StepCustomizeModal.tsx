@@ -121,7 +121,7 @@ export function StepCustomizeModal({
                 </div>
               )}
               {step.description && (isHtml
-                ? <div className="prose prose-sm max-w-none text-slate-600" dangerouslySetInnerHTML={{ __html: step.description }} />
+                ? <div className="prose prose-sm max-w-none dark:prose-invert text-slate-600 dark:text-slate-300" dangerouslySetInnerHTML={{ __html: step.description }} />
                 : <p className="text-sm text-slate-600 whitespace-pre-wrap">{step.description}</p>)}
               {step.deliverable && (
                 <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">

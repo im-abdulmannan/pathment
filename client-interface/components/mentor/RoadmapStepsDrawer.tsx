@@ -31,7 +31,7 @@ export function RoadmapStepsDrawer({ roadmap, onClose }: { roadmap: LinearRoadma
               </div>
 
               {s.description && (isHtml
-                ? <div className="prose prose-sm max-w-none text-slate-600 mt-2" dangerouslySetInnerHTML={{ __html: s.description }} />
+                ? <div className="prose prose-sm max-w-none dark:prose-invert text-slate-600 dark:text-slate-300 mt-2" dangerouslySetInnerHTML={{ __html: s.description }} />
                 : <p className="text-sm text-slate-600 mt-2 whitespace-pre-wrap">{s.description}</p>)}
 
               {(s.effort || s.dueOffsetDays != null || s.pointsBase != null) && (
