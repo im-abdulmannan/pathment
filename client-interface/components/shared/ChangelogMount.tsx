@@ -17,9 +17,17 @@ interface ChangelogMountProps {
 export default function ChangelogMount({ role }: ChangelogMountProps) {
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
   const [open, setOpen] = useState(false);
+  const [shown, setShown] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Fade + scale in once opened.
+  useEffect(() => {
+    if (!open) { setShown(false); return; }
+    const r = requestAnimationFrame(() => setShown(true));
+    return () => cancelAnimationFrame(r);
+  }, [open]);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,18 +52,23 @@ export default function ChangelogMount({ role }: ChangelogMountProps) {
   }, [open]);
 
   const dismiss = () => {
-    setOpen(false);
+    setShown(false);
     changelogApi.markSeen().catch(() => {});
     window.dispatchEvent(new CustomEvent('pathment:changelog-seen'));
+    setTimeout(() => setOpen(false), 200);
   };
 
   if (!mounted || !open || entries.length === 0) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={dismiss} aria-hidden="true" />
       <div
-        className="relative w-full max-w-lg bg-card rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+        className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200 ${shown ? 'opacity-100' : 'opacity-0'}`}
+        onClick={dismiss}
+        aria-hidden="true"
+      />
+      <div
+        className={`relative w-full max-w-lg bg-card rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-200 ease-out ${shown ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="whatsnew-title"

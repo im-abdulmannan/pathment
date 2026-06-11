@@ -59,6 +59,8 @@ function EntryRow({ entry }: { entry: ChangelogEntry }) {
 
 export default function ChangelogDrawer({ role }: ChangelogDrawerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [render, setRender] = useState(false); // in the DOM (true while animating out)
+  const [shown, setShown] = useState(false);   // visual open state (drives the slide)
   const [updates, setUpdates] = useState<ChangelogEntry[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -105,14 +107,29 @@ export default function ChangelogDrawer({ role }: ChangelogDrawerProps) {
     }
   };
 
+  // Drive the enter/exit animation off `isOpen`: mount → next frame slide in;
+  // close → slide out, then unmount after the transition (250ms).
   useEffect(() => {
-    if (!isOpen) return;
+    if (isOpen) {
+      setRender(true);
+      let r2 = 0;
+      const r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(() => setShown(true)); });
+      return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+    }
+    setShown(false);
+    const t = setTimeout(() => setRender(false), 250);
+    return () => clearTimeout(t);
+  }, [isOpen]);
+
+  // Escape + scroll-lock while the sheet is on screen.
+  useEffect(() => {
+    if (!render) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
     document.addEventListener('keydown', onKey);
     return () => { document.body.style.overflow = prev; document.removeEventListener('keydown', onKey); };
-  }, [isOpen]);
+  }, [render]);
 
   const highlights = updates.filter((u) => u.type !== 'fix');
   const fixes = updates.filter((u) => u.type === 'fix');
@@ -139,11 +156,15 @@ export default function ChangelogDrawer({ role }: ChangelogDrawerProps) {
         </span>
       </button>
 
-      {isMounted && isOpen && createPortal(
+      {isMounted && render && createPortal(
         <>
-          <div className="fixed inset-0 z-70 bg-black/30 dark:bg-black/60 lg:left-64" onClick={() => setIsOpen(false)} aria-hidden="true" />
+          <div
+            className={`fixed inset-0 z-70 bg-black/30 dark:bg-black/60 lg:left-64 transition-opacity duration-[250ms] ${shown ? 'opacity-100' : 'opacity-0'}`}
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
           <aside
-            className="fixed right-0 top-0 z-80 h-dvh w-full max-w-md bg-card shadow-2xl border-l border-slate-200 dark:border-slate-700 flex flex-col"
+            className={`fixed right-0 top-0 z-80 h-dvh w-full max-w-md bg-card shadow-2xl border-l border-slate-200 dark:border-slate-700 flex flex-col transition-transform duration-[250ms] ease-out will-change-transform ${shown ? 'translate-x-0' : 'translate-x-full'}`}
             role="dialog"
             aria-labelledby="changelog-title"
             aria-modal="true"
