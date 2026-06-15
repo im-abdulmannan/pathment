@@ -132,6 +132,8 @@ async function makeUser({ first, last, emailLocal, role, occupation, lastActivit
       yearsOfExperience: 7,
       maxMentees: 15,
       isAcceptingMentees: true,
+      title: "Senior Software Engineer",
+      organization: "Dev Weekends",
     });
   } else {
     await models.MenteeProfile.create({

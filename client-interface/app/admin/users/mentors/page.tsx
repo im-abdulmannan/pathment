@@ -100,11 +100,34 @@ const columns: DataTableColumn<MentorListItem>[] = [
     },
   },
   {
+    key: 'clans' as keyof MentorListItem,
+    label: 'Clans',
+    render: (_, row) => {
+      const clans = row.clans ?? [];
+      if (clans.length === 0) return <span className="text-slate-400 text-sm">—</span>;
+      const visible = clans.slice(0, 2);
+      const remaining = clans.length - visible.length;
+      return (
+        <div className="flex flex-col gap-1">
+          {visible.map((c) => (
+            <span key={c.id} className="inline-flex items-center gap-1 text-xs text-slate-700">
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${c.role === 'lead_mentor' ? 'bg-brand-50 text-brand-700' : 'bg-slate-100 text-slate-600'}`}>
+                {c.role === 'lead_mentor' ? 'Lead' : 'Co'}
+              </span>
+              <span className="truncate max-w-[120px]">{c.name}</span>
+            </span>
+          ))}
+          {remaining > 0 && <span className="text-xs text-slate-400">+{remaining} more</span>}
+        </div>
+      );
+    },
+  },
+  {
     key: 'specializations' as keyof MentorListItem,
     label: 'Specializations',
     render: (_, row) => {
-      const specs = row.mentorProfile?.specialization ?? [];
-      if (specs.length === 0) return <span className="text-slate-400 text-sm">-</span>;
+      const specs = row.specializations ?? [];
+      if (specs.length === 0) return <span className="text-slate-400 text-sm">—</span>;
       const visible = specs.slice(0, 2);
       const remaining = specs.length - visible.length;
       return (

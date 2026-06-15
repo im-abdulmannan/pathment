@@ -49,9 +49,38 @@ const getAllMentors = catchAsync(async (req, res) => {
     distinct: true,
   });
 
+  // Attach each mentor's clans (lead/co-mentor) + skills (specializations) via
+  // batched queries — so the admin table shows which clans they run + expertise
+  // without row-multiplying the paginated list.
+  const mentorIds = mentors.map((m) => m.id);
+  const [clanRows, skillUsers] = mentorIds.length ? await Promise.all([
+    models.ClanMembership.findAll({
+      where: { userId: { [Op.in]: mentorIds }, status: 'active', role: { [Op.in]: ['lead_mentor', 'co_mentor'] } },
+      include: [{ model: models.Clan, as: 'clan', attributes: ['id', 'name'] }],
+    }),
+    models.User.findAll({
+      where: { id: { [Op.in]: mentorIds } }, attributes: ['id'],
+      include: [{ model: models.Skill, as: 'skills', attributes: ['name'], through: { attributes: [] } }],
+    }),
+  ]) : [[], []];
+  const clansByUser = new Map();
+  for (const m of clanRows) {
+    if (!m.clan) continue;
+    const arr = clansByUser.get(m.userId) || [];
+    arr.push({ id: m.clan.id, name: m.clan.name, role: m.role });
+    clansByUser.set(m.userId, arr);
+  }
+  const skillsByUser = new Map(skillUsers.map((u) => [u.id, (u.skills || []).map((s) => s.name)]));
+  const mentorRows = mentors.map((m) => {
+    const json = m.toJSON();
+    json.clans = clansByUser.get(m.id) || [];
+    json.specializations = skillsByUser.get(m.id) || [];
+    return json;
+  });
+
   res.status(200).json({
     status: 'success',
-    data: { mentors },
+    data: { mentors: mentorRows },
     pagination: {
       page: pageNum,
       limit: limitNum,

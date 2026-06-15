@@ -11,6 +11,7 @@ import {
   Flame,
   Trash2,
   Pencil,
+  Users2,
   Loader2,
   ShieldOff,
   ShieldCheck,
@@ -77,6 +78,15 @@ const columns: DataTableColumn<MenteeListItem>[] = [
         </div>
       );
     },
+  },
+  {
+    key: 'currentClan' as keyof MenteeListItem,
+    label: 'Clan',
+    render: (_, row) => (
+      row.currentClan
+        ? <span className="inline-flex items-center gap-1.5 text-sm text-slate-700"><Users2 className="w-3.5 h-3.5 text-slate-400" />{row.currentClan.name}</span>
+        : <span className="text-slate-400 text-sm">Unassigned</span>
+    ),
   },
   {
     key: 'programs' as keyof MenteeListItem,
