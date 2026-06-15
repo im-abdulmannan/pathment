@@ -3,13 +3,17 @@
  *
  * Creates one fully-populated program with everything the admin, mentor and
  * mentee experiences need to look real:
- *   • 1 admin, 2 lead mentors, 8 mentees (all log in with the same demo password)
+ *   • 1 admin, 2 lead mentors + 1 CO-MENTOR (with a permission override), 8 mentees
+ *     (all log in with the same demo password)
  *   • 1 published program + running cohort + 2 clans
- *   • 1 org roadmap with 6 ordered tasks
+ *   • 1 org roadmap (6 ordered tasks) + a LOCAL imported copy per lead mentor
+ *     (the real import→assign flow), with per-mentee roadmap progress
  *   • per-mentee enrollments + assigned tasks crafted to span the FULL risk
  *     spectrum (on-track, star, disengaged/at-risk, struggling-but-fighting,
  *     on-watch, awaiting-review, brand-new) so the mentor cockpit, at-risk page
  *     and review flow all show legitimate, varied data
+ *   • real submissions (+ feedback on completed tasks) so the review flow works
+ *   • a co-mentor promotion candidate awaiting admin approval
  *   • blockers, accepted delays, meeting notes, filled schedules, announcements
  *
  * Idempotent: it always wipes and recreates the demo namespace (everything
@@ -34,40 +38,65 @@ const daysAhead = (n) => new Date(Date.now() + n * DAY);
 
 async function cleanupDemo() {
   console.log("🧹 Clearing any existing demo namespace…");
+  // paranoid:false so we also catch SOFT-DELETED demo users from a prior run —
+  // otherwise their rows (and unique emails) linger and the re-seed collides.
   const demoUsers = await models.User.findAll({
     where: { email: { [Op.like]: `%${DEMO_DOMAIN}` } },
     attributes: ["id"],
+    paranoid: false,
   });
   const userIds = demoUsers.map((u) => u.id);
-  const program = await models.Program.findOne({ where: { name: PROGRAM_NAME } });
+  const program = await models.Program.findOne({ where: { name: PROGRAM_NAME }, paranoid: false });
 
   // Child rows first (FK order). Scope strictly to demo users / demo program.
   if (userIds.length) {
-    const byMentee = { where: { menteeId: { [Op.in]: userIds } } };
-    await models.MeetingNote.destroy({ where: { menteeId: { [Op.in]: userIds } } });
+    // force:true everywhere — several models are paranoid (soft-delete), and a
+    // soft delete would leave rows + unique emails behind and break the re-seed.
+    const byMentee = { where: { menteeId: { [Op.in]: userIds } }, force: true };
+
+    // Submissions / feedback hang off the demo's assigned tasks — clear them
+    // before the tasks (deepest FK children first).
+    const demoTasks = await models.AssignedTask.findAll({ where: { menteeId: { [Op.in]: userIds } }, attributes: ["id"], paranoid: false });
+    const taskIds = demoTasks.map((t) => t.id);
+    if (taskIds.length) {
+      if (models.TaskFeedback) await models.TaskFeedback.destroy({ where: { assignedTaskId: { [Op.in]: taskIds } }, force: true });
+      const subs = await models.TaskSubmission.findAll({ where: { assignedTaskId: { [Op.in]: taskIds } }, attributes: ["id"], paranoid: false });
+      const subIds = subs.map((s) => s.id);
+      if (subIds.length && models.TaskSubmissionFile) await models.TaskSubmissionFile.destroy({ where: { submissionId: { [Op.in]: subIds } }, force: true });
+      await models.TaskSubmission.destroy({ where: { assignedTaskId: { [Op.in]: taskIds } }, force: true });
+    }
+    if (models.RoadmapProgress) await models.RoadmapProgress.destroy(byMentee);
+    if (models.PromotionCandidate) await models.PromotionCandidate.destroy({ where: { [Op.or]: [{ menteeId: { [Op.in]: userIds } }, { nominatedBy: { [Op.in]: userIds } }] }, force: true });
+    if (models.ClanMemberPermission) await models.ClanMemberPermission.destroy({ where: { userId: { [Op.in]: userIds } }, force: true });
+
+    await models.MeetingNote.destroy({ where: { menteeId: { [Op.in]: userIds } }, force: true });
     await models.MenteeSchedule.destroy(byMentee);
     await models.Blocker.destroy(byMentee);
     await models.DelayEvent.destroy(byMentee);
     await models.AssignedTask.destroy(byMentee);
     await models.Enrollment.destroy(byMentee);
-    await models.ClanMembership.destroy({ where: { userId: { [Op.in]: userIds } } });
-    await models.Announcement.destroy({ where: { authorId: { [Op.in]: userIds } } });
+    await models.ClanMembership.destroy({ where: { userId: { [Op.in]: userIds } }, force: true });
+    await models.Announcement.destroy({ where: { authorId: { [Op.in]: userIds } }, force: true });
   }
   if (program) {
-    const roadmaps = await models.Roadmap.findAll({ where: { programId: program.id }, attributes: ["id"] });
+    const roadmaps = await models.Roadmap.findAll({ where: { programId: program.id }, attributes: ["id"], paranoid: false });
     const rmIds = roadmaps.map((r) => r.id);
-    if (rmIds.length) await models.RoadmapTask.destroy({ where: { roadmapId: { [Op.in]: rmIds } } });
-    await models.Roadmap.destroy({ where: { programId: program.id } });
-    await models.Clan.destroy({ where: { programId: program.id } });
-    await models.Cohort.destroy({ where: { programId: program.id } });
-    await models.Program.destroy({ where: { id: program.id } });
+    if (rmIds.length) {
+      // RoadmapProgress references roadmaps (the local copies) — clear any strays.
+      if (models.RoadmapProgress) await models.RoadmapProgress.destroy({ where: { roadmapId: { [Op.in]: rmIds } }, force: true });
+      await models.RoadmapTask.destroy({ where: { roadmapId: { [Op.in]: rmIds } }, force: true });
+    }
+    await models.Roadmap.destroy({ where: { programId: program.id }, force: true });
+    await models.Clan.destroy({ where: { programId: program.id }, force: true });
+    await models.Cohort.destroy({ where: { programId: program.id }, force: true });
+    await models.Program.destroy({ where: { id: program.id }, force: true });
   }
   if (userIds.length) {
-    await models.MenteeProfile.destroy({ where: { userId: { [Op.in]: userIds } } });
-    await models.MentorProfile.destroy({ where: { userId: { [Op.in]: userIds } } });
-    await models.AdminProfile.destroy({ where: { userId: { [Op.in]: userIds } } });
-    await models.ScheduleTemplate.destroy({ where: { createdBy: { [Op.in]: userIds } } });
-    await models.User.destroy({ where: { id: { [Op.in]: userIds } } });
+    await models.MenteeProfile.destroy({ where: { userId: { [Op.in]: userIds } }, force: true });
+    await models.MentorProfile.destroy({ where: { userId: { [Op.in]: userIds } }, force: true });
+    await models.AdminProfile.destroy({ where: { userId: { [Op.in]: userIds } }, force: true });
+    await models.ScheduleTemplate.destroy({ where: { createdBy: { [Op.in]: userIds } }, force: true });
+    await models.User.destroy({ where: { id: { [Op.in]: userIds } }, force: true });
   }
   console.log("✅ Demo namespace clear\n");
 }
@@ -127,6 +156,9 @@ async function seed() {
   const admin = await makeUser({ first: "Dana", last: "Reyes", emailLocal: "admin", role: "admin" });
   const aisha = await makeUser({ first: "Aisha", last: "Khan", emailLocal: "mentor.aisha", role: "mentor" });
   const omar = await makeUser({ first: "Omar", last: "Farooq", emailLocal: "mentor.omar", role: "mentor" });
+  // A co-mentor on the Backend clan — showcases the co-mentor experience
+  // (full lead parity by default, with a per-person permission override below).
+  const sam = await makeUser({ first: "Sam", last: "Rivera", emailLocal: "mentor.sam", role: "mentor" });
 
   // 8 mentee archetypes spanning the full risk spectrum.
   // occupation + lastActivityDate feed the risk/fairness math directly.
@@ -150,7 +182,7 @@ async function seed() {
     });
     mentees[s.local] = { user: u, spec: s };
   }
-  console.log(`✅ ${2 + 8 + 1} users created (1 admin, 2 mentors, 8 mentees)\n`);
+  console.log(`✅ ${1 + 3 + 8} users created (1 admin, 3 mentors, 8 mentees)\n`);
 
   // ── Program + cohort ────────────────────────────────────────────────────────
   console.log("📚 Creating program, cohort & clans…");
@@ -200,7 +232,17 @@ async function seed() {
   // Lead-mentor memberships (this is how the mentor cockpit discovers its cohort).
   await models.ClanMembership.create({ clanId: feClan.id, userId: aisha.id, role: "lead_mentor", status: "active" });
   await models.ClanMembership.create({ clanId: beClan.id, userId: omar.id, role: "lead_mentor", status: "active" });
-  console.log("✅ Program, cohort & 2 clans created\n");
+
+  // Sam joins the Backend clan as a CO-MENTOR (full lead parity by default).
+  await models.ClanMembership.create({ clanId: beClan.id, userId: sam.id, role: "co_mentor", status: "active" });
+  // …with one permission turned off for him, to demo the per-co-mentor toggle:
+  // he can mentor fully but can't see clan-wide analytics.
+  if (models.ClanMemberPermission) {
+    await models.ClanMemberPermission.create({
+      clanId: beClan.id, userId: sam.id, denied: ["analytics.view"], updatedBy: omar.id,
+    });
+  }
+  console.log("✅ Program, cohort & 2 clans created (incl. 1 co-mentor)\n");
 
   // ── Roadmap + tasks ──────────────────────────────────────────────────────────
   console.log("🗺️  Creating roadmap & tasks…");
@@ -209,7 +251,7 @@ async function seed() {
     name: "Full-Stack Core Roadmap",
     description: "The shared backbone every fellow follows, week by week.",
     isBaseRoadmap: true,
-    scope: "org",
+    source: "org", // the shared org library roadmap mentors import + assign
     published: true,
     totalWeeks: 12,
     totalTasks: 6,
@@ -241,7 +283,47 @@ async function seed() {
       })
     );
   }
-  console.log(`✅ Roadmap + ${roadmapTasks.length} tasks created\n`);
+  console.log(`✅ Org roadmap + ${roadmapTasks.length} tasks created\n`);
+
+  // Each lead mentor IMPORTS the org roadmap into their own local copy (the real
+  // mentor flow), with its own step rows. Mentees are then assigned tasks from
+  // their clan lead's local copy — so "My roadmaps" is populated and the
+  // lineage-aware "already assigned" logic has realistic data to work with.
+  async function importLocalCopy(mentorId) {
+    const copy = await models.Roadmap.create({
+      programId: program.id,
+      name: roadmap.name,
+      description: roadmap.description,
+      source: "local",
+      published: false,
+      importedFrom: roadmap.id,
+      ownerMentorId: mentorId,
+      isBaseRoadmap: false,
+      totalTasks: taskDefs.length,
+      skillTags: roadmap.skillTags,
+    });
+    const tasks = [];
+    for (let i = 0; i < taskDefs.length; i++) {
+      const d = taskDefs[i];
+      tasks.push(
+        await models.RoadmapTask.create({
+          roadmapId: copy.id,
+          title: d.title,
+          description: `Week ${d.week}: ${d.title}. Build the deliverable, then submit for mentor review.`,
+          type: d.type,
+          difficulty: d.difficulty,
+          taskOrder: i + 1,
+          deliverable: d.deliverable,
+          estimatedHours: 10,
+          pointsBase: 10 + i * 2,
+        })
+      );
+    }
+    return { roadmap: copy, tasks };
+  }
+  const feRoadmap = await importLocalCopy(aisha.id);
+  const beRoadmap = await importLocalCopy(omar.id);
+  console.log("✅ Lead mentors imported their local roadmap copies\n");
 
   // ── Per-mentee enrollment + assigned tasks (the heart of the demo) ────────────
   console.log("🎯 Enrolling mentees & assigning work…");
@@ -332,6 +414,7 @@ async function seed() {
     const m = mentees[s.local].user;
     const clan = s.clan === "FE" ? feClan : beClan;
     const mentor = s.clan === "FE" ? aisha : omar;
+    const local = s.clan === "FE" ? feRoadmap : beRoadmap;
     const plan = planFor(s.archetype);
 
     const enrollment = await models.Enrollment.create({
@@ -354,11 +437,15 @@ async function seed() {
       clanId: clan.id, userId: m.id, role: "mentee", status: "active", enrollmentId: enrollment.id,
     });
 
+    const rating = s.archetype === "star" ? 5 : 4;
     for (const t of plan.tasks) {
-      const rt = roadmapTasks[t.idx];
+      const rt = local.tasks[t.idx]; // assigned from the lead's local roadmap copy
+      const hasSubmission = ["submitted", "completed"].includes(t.status);
       const completedAt = t.status === "completed" && t.completedDaysAgo != null ? daysAgo(t.completedDaysAgo) : null;
       const dueDate = t.dueDaysFromNow != null ? daysAhead(t.dueDaysFromNow) : (completedAt ? daysAgo(t.completedDaysAgo + 5) : null);
-      await models.AssignedTask.create({
+      const submittedAt = hasSubmission ? (completedAt || daysAgo(1)) : null;
+
+      const at = await models.AssignedTask.create({
         roadmapTaskId: rt.id,
         menteeId: m.id,
         mentorId: mentor.id,
@@ -367,15 +454,55 @@ async function seed() {
         assignedAt: daysAgo(50),
         dueDate,
         startedAt: ["in_progress", "submitted", "completed"].includes(t.status) ? daysAgo(t.completedDaysAgo != null ? t.completedDaysAgo + 4 : 6) : null,
-        submittedAt: ["submitted", "completed"].includes(t.status) ? (completedAt || daysAgo(1)) : null,
+        submittedAt,
         completedAt,
         isLate: !!t.late,
+        currentSubmissionVersion: hasSubmission ? 1 : 0,
         pointsAwarded: t.status === "completed" ? rt.pointsBase : 0,
-        finalRating: t.status === "completed" ? (s.archetype === "star" ? 5 : 4) : null,
+        finalRating: t.status === "completed" ? rating : null,
+      });
+
+      // Real submission rows so the mentor review/feedback flow has something to
+      // open — 'pending' for awaiting-review, 'approved' + feedback for completed.
+      if (hasSubmission) {
+        const submission = await models.TaskSubmission.create({
+          assignedTaskId: at.id,
+          version: 1,
+          submissionText: `Here's my work for "${rt.title}" — repo and notes attached. Happy to iterate on feedback.`,
+          submissionUrls: ["https://github.com/demo/pathment-fellowship"],
+          status: t.status === "completed" ? "approved" : "pending",
+          submittedAt: submittedAt || daysAgo(1),
+        });
+        if (t.status === "completed") {
+          await models.TaskFeedback.create({
+            assignedTaskId: at.id,
+            submissionId: submission.id,
+            mentorId: mentor.id,
+            feedbackText: "Solid work — meets the deliverable and the code is clean and well-structured. Nice job.",
+            rating,
+            isApproved: true,
+            decision: "approved",
+            feedbackType: "general",
+          });
+        }
+      }
+    }
+
+    // Mentee's position in the linear roadmap (drives the mentee progress view +
+    // the "already assigned" lock). currentStep = how many they've cleared.
+    if (models.RoadmapProgress && plan.tasks.length) {
+      const cleared = plan.tasks.filter((t) => t.status === "completed").length;
+      await models.RoadmapProgress.create({
+        roadmapId: local.roadmap.id,
+        menteeId: m.id,
+        enrollmentId: enrollment.id,
+        currentStep: Math.min(cleared, local.tasks.length - 1),
+        completed: cleared >= local.tasks.length,
+        startedAt: daysAgo(7 * 7),
       });
     }
   }
-  console.log("✅ Enrollments + assigned tasks created\n");
+  console.log("✅ Enrollments, assigned tasks, submissions & feedback created\n");
 
   // ── Blockers + accepted delays (drive watch/fighting + fairness credit) ───────
   console.log("🚧 Adding blockers, delays, notes & schedules…");
@@ -459,16 +586,33 @@ async function seed() {
 
   console.log("✅ Blockers, delays, notes, schedules & announcements created\n");
 
+  // ── Promotion pipeline (mentee → co-mentor) ──────────────────────────────────
+  // Maya (the star) is nominated and marked ready, so /admin/promotions shows an
+  // actionable card and the mentor Promotions page shows the pipeline.
+  if (models.PromotionCandidate) {
+    await models.PromotionCandidate.create({
+      menteeId: mentees["mentee.maya"].user.id,
+      nominatedBy: aisha.id,
+      stage: "approved", // awaiting the admin's final promotion
+      motivation: "Maya is well ahead of the cohort with a perfect on-time record and already helps peers unblock.",
+      strengths: "Reliable, self-directed, and a clear communicator — a natural fit to co-lead.",
+      availability: "5 hours / week",
+    });
+    console.log("✅ Promotion candidate created (Maya — awaiting admin)\n");
+  }
+
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("🎉 Demo data ready!  All accounts use password:  " + DEMO_PASSWORD);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("  Admin    admin" + DEMO_DOMAIN);
-  console.log("  Mentor   mentor.aisha" + DEMO_DOMAIN + "   (Frontend Clan)");
-  console.log("  Mentor   mentor.omar" + DEMO_DOMAIN + "    (Backend Clan)");
-  console.log("  Mentee   mentee.maya" + DEMO_DOMAIN + "    (star)");
+  console.log("  Mentor   mentor.aisha" + DEMO_DOMAIN + "   (Frontend Clan — lead)");
+  console.log("  Mentor   mentor.omar" + DEMO_DOMAIN + "    (Backend Clan — lead)");
+  console.log("  Mentor   mentor.sam" + DEMO_DOMAIN + "     (Backend Clan — co-mentor, analytics off)");
+  console.log("  Mentee   mentee.maya" + DEMO_DOMAIN + "    (star · nominated for co-mentor)");
   console.log("  Mentee   mentee.sara" + DEMO_DOMAIN + "    (at risk)");
   console.log("  Mentee   mentee.noor" + DEMO_DOMAIN + "    (struggling, fighting)");
-  console.log("  …+ 5 more mentees spanning on-track / watch / review / new");
+  console.log("  Mentee   mentee.priya" + DEMO_DOMAIN + "   (submissions awaiting review)");
+  console.log("  …+ 4 more mentees spanning on-track / watch / new");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 }
 
