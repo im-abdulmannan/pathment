@@ -81,6 +81,7 @@ export const taskApi = {
     acceptanceCriteriaOverride?: string[] | null;
     resourcesOverride?: { title: string; url: string; resourceType?: string }[] | null;
     mentorNote?: string | null;
+    pointsBase?: number | null;
     dueDate?: string;
   }) => apiClient.patch(`/tasks/${taskId}`, data),
 

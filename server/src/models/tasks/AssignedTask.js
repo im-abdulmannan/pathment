@@ -76,6 +76,13 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: 0,
       field: 'points_awarded'
     },
+    // Target points for THIS assignment (from the roadmap step on assign, or set
+    // for a custom task; editable per mentee). Null → fall back to the step / default.
+    pointsBase: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      field: 'points_base'
+    },
     isLate: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

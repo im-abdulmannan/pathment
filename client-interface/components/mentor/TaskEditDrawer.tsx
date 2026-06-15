@@ -25,18 +25,21 @@ export function TaskEditDrawer({
   onSaved: () => void;
 }) {
   const rt = task.roadmapTask || {};
+  const effectivePoints = task.points ?? task.pointsBase ?? rt.pointsBase ?? 10;
   const initial = {
     title: rt.title || '',
     description: rt.description || '',
     deliverable: rt.deliverable || '',
     criteria: (rt.acceptanceCriteria || []).join('\n'),
     note: task.mentorNote || '',
+    points: String(effectivePoints),
   };
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description);
   const [deliverable, setDeliverable] = useState(initial.deliverable);
   const [criteria, setCriteria] = useState(initial.criteria);
   const [note, setNote] = useState(initial.note);
+  const [points, setPoints] = useState(initial.points);
   const [resources, setResources] = useState<ResourceItem[]>(
     (rt.resources || []).map((r: any) => ({ title: r.title || '', url: r.url || '', resourceType: r.resourceType || 'reading' }))
   );
@@ -60,6 +63,7 @@ export function TaskEditDrawer({
       payload.acceptanceCriteriaOverride = arr.length ? arr : null;
     }
     if (note !== initial.note) payload.mentorNote = note.trim() || null;
+    if (points !== initial.points) payload.pointsBase = points.trim() ? Math.max(0, Number(points) || 0) : null;
     if (resourcesTouched) {
       const arr = resources.filter((r) => r.url.trim()).map((r) => ({ title: r.title.trim() || r.url.trim(), url: r.url.trim(), resourceType: r.resourceType || 'reading' }));
       payload.resourcesOverride = arr.length ? arr : null;
@@ -104,6 +108,11 @@ export function TaskEditDrawer({
         <div>
           <label className={label}>Deliverable</label>
           <textarea value={deliverable} onChange={(e) => setDeliverable(e.target.value)} rows={2} className={field} />
+        </div>
+        <div>
+          <label className={label}>Points</label>
+          <input type="number" min={0} value={points} onChange={(e) => setPoints(e.target.value)} className={`${field} max-w-[8rem]`} />
+          <p className="mt-1 text-xs text-slate-400">Points this mentee earns on completion.</p>
         </div>
         <div>
           <label className={label}>Acceptance criteria <span className="text-slate-400 font-normal">(one per line)</span></label>

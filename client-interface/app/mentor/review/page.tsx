@@ -730,7 +730,12 @@ export default function CohortReview() {
                                       {t.roadmapTask?.title || t.title || 'Task'}
                                       {t.hasOverrides && <span className="ml-1.5 align-middle text-[10px] font-medium text-amber-600">• customized</span>}
                                     </p>
-                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                    <div className="flex items-center gap-2 text-xs text-slate-500 flex-wrap">
+                                      {/* Source: which roadmap, or a custom task. */}
+                                      <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-600 px-1.5 py-0.5 text-[10px] font-medium max-w-[14rem] truncate">
+                                        {t.isCustomTask ? 'Custom' : (t.roadmapName ? `Roadmap · ${t.roadmapName}` : 'Roadmap')}
+                                      </span>
+                                      {(t.points ?? t.pointsBase ?? t.roadmapTask?.pointsBase) != null && <span>{t.points ?? t.pointsBase ?? t.roadmapTask?.pointsBase} pts</span>}
                                       {t.roadmapTask?.type && <span className="capitalize">{t.roadmapTask.type}</span>}
                                       {due && <span className={overdue ? 'text-red-600 inline-flex items-center gap-1' : ''}>{overdue && <Clock className="w-3 h-3" />}due {due.toLocaleDateString()}</span>}
                                       {rating != null && <span className="inline-flex items-center gap-0.5 text-amber-600"><CheckCircle2 className="w-3 h-3" />{rating}★</span>}

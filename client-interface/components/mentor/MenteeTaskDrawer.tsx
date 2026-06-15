@@ -76,13 +76,17 @@ export function MenteeTaskDrawer({ task, onClose, onChanged }: { task: any; onCl
             <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_CLS[task.status] || 'bg-slate-100 text-slate-600'}`}>{(task.status || 'assigned').replace('_', ' ')}</span>
             {rt.type && <span className="px-2 py-0.5 rounded bg-brand-50 text-brand-700 text-[11px] font-medium capitalize">{rt.type}</span>}
             {rt.difficulty && <span className={`px-2 py-0.5 rounded text-[11px] font-medium capitalize ${DIFF_CLS[rt.difficulty] || 'bg-slate-100 text-slate-600'}`}>{rt.difficulty}</span>}
+            {/* Where the task came from: a roadmap (which one) or a custom task. */}
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">
+              {task.isCustomTask ? 'Custom task' : (task.roadmapName || rt.roadmap?.name ? `Roadmap · ${task.roadmapName || rt.roadmap?.name}` : 'Roadmap')}
+            </span>
             {task.hasOverrides && <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[11px] font-medium">Customized for this mentee</span>}
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
             {due && <span className="inline-flex items-center gap-1"><Clock className="w-3.5 h-3.5" />due {due.toLocaleDateString()}</span>}
             {rt.estimatedHours != null && <span>{rt.estimatedHours}h est.</span>}
-            {rt.pointsBase != null && <span className="inline-flex items-center gap-1"><Award className="w-3.5 h-3.5" />{rt.pointsBase} pts</span>}
+            {(task.points ?? task.pointsBase ?? rt.pointsBase) != null && <span className="inline-flex items-center gap-1"><Award className="w-3.5 h-3.5" />{task.points ?? task.pointsBase ?? rt.pointsBase} pts</span>}
           </div>
 
           {task.status === 'cancelled' && task.cancellationReason && (

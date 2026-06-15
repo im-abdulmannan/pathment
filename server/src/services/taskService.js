@@ -60,6 +60,12 @@ function applyTaskOverrides(taskInstance) {
   t.hasOverrides = !!(t.titleOverride || t.descriptionOverride || t.deliverableOverride
     || (Array.isArray(t.acceptanceCriteriaOverride) && t.acceptanceCriteriaOverride.length)
     || Array.isArray(t.resourcesOverride) || t.mentorNote);
+
+  // Convenience fields for the UI: where the task came from + its effective points.
+  const rmName = rt && rt.roadmap ? rt.roadmap.name : null;
+  t.source = t.isCustomTask ? 'custom' : 'roadmap';
+  t.roadmapName = t.isCustomTask ? null : rmName;
+  t.points = (t.pointsBase != null ? t.pointsBase : (rt ? rt.pointsBase : null)) ?? null;
   return t;
 }
 
@@ -263,7 +269,8 @@ class TaskService {
       include: [
         {
           model: models.RoadmapTask,
-          as: 'roadmapTask'
+          as: 'roadmapTask',
+          include: [{ model: models.Roadmap, as: 'roadmap', attributes: ['id', 'name'] }]
         },
         {
           model: models.User,
@@ -334,7 +341,8 @@ class TaskService {
       include: [
         {
           model: models.RoadmapTask,
-          as: 'roadmapTask'
+          as: 'roadmapTask',
+          include: [{ model: models.Roadmap, as: 'roadmap', attributes: ['id', 'name'] }]
         },
         {
           model: models.User,
@@ -383,7 +391,8 @@ class TaskService {
             {
               model: models.TaskResource,
               as: 'resources'
-            }
+            },
+            { model: models.Roadmap, as: 'roadmap', attributes: ['id', 'name'] }
           ]
         },
         {
@@ -541,7 +550,8 @@ class TaskService {
 
     if (status === 'completed') {
       updateData.completedAt = new Date();
-      updateData.pointsAwarded = pointsAwarded || task.roadmapTask?.pointsBase || 10;
+      // Honour the per-assignment points first (custom / edited), then the step's.
+      updateData.pointsAwarded = pointsAwarded || task.pointsBase || task.roadmapTask?.pointsBase || 10;
     } else if (status === 'revision_needed') {
       updateData.revisionCount = task.revisionCount + 1;
     }
@@ -903,6 +913,11 @@ class TaskService {
         const v = data[f];
         task[f] = (v === '' || v == null || (Array.isArray(v) && !v.length)) ? null : v;
       }
+    }
+    // Editable points for this assignment.
+    if ('pointsBase' in data) {
+      const n = Number(data.pointsBase);
+      task.pointsBase = Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
     }
     if ('dueDate' in data && data.dueDate) {
       task.dueDate = await this._resolveDueDate(task.menteeId, data.dueDate);

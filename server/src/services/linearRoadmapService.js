@@ -543,6 +543,8 @@ class LinearRoadmapService {
       assignedAt: new Date(),
       dueDate: due,
       isCustomTask: false,
+      // Carry the step's points onto the assignment so they show + can be edited.
+      pointsBase: Number.isFinite(Number(step.pointsBase)) ? Number(step.pointsBase) : 10,
       ...(ov || {})
     });
 

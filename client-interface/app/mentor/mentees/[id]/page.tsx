@@ -187,7 +187,11 @@ export default function MenteeDetail() {
     insights?.tasksByStatus ??
     (tasks || []).reduce((acc: Record<string, any[]>, t: any) => {
       const k = t.status || 'assigned';
-      (acc[k] = acc[k] || []).push({ id: t.id, title: t.roadmapTask?.title || t.title, status: t.status });
+      (acc[k] = acc[k] || []).push({
+        id: t.id, title: t.roadmapTask?.title || t.title, status: t.status,
+        source: t.isCustomTask ? 'Custom' : (t.roadmapName || t.roadmapTask?.roadmap?.name ? `Roadmap · ${t.roadmapName || t.roadmapTask?.roadmap?.name}` : 'Roadmap'),
+        points: t.points ?? t.pointsBase ?? t.roadmapTask?.pointsBase ?? null,
+      });
       return acc;
     }, {});
   const orderedStatuses = STATUS_ORDER.filter((s) => grouped[s]?.length);
@@ -344,7 +348,10 @@ export default function MenteeDetail() {
                           onClick={() => router.push(`/mentor/tasks/${t.id}`)}
                           className="w-full text-left flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 hover:border-brand-200 transition-colors"
                         >
-                          <span className="text-sm font-medium text-slate-900 truncate">{t.title}</span>
+                          <span className="min-w-0">
+                            <span className="block text-sm font-medium text-slate-900 truncate">{t.title}</span>
+                            <span className="block text-[11px] text-slate-500 truncate">{t.source}{t.points != null ? ` · ${t.points} pts` : ''}</span>
+                          </span>
                           <div className="flex items-center gap-2 shrink-0">
                             {t.isLate && <span className="text-xs text-red-600">late</span>}
                             {t.finalRating != null && (
