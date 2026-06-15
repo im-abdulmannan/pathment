@@ -73,7 +73,9 @@ export default function TaskDetailsPage({ params }: PageProps) {
   const latestSubmission = task.submissions?.[task.submissions.length - 1] || null;
   const feedback = latestSubmission?.feedback || [];
 
-  const canSubmit = ['in_progress', 'revision_needed', 'assigned'].includes(task.status);
+  // A mentee can still change their work while it's awaiting review ('submitted')
+  // — only a graded/cancelled task is locked. Resubmitting creates a new version.
+  const canSubmit = ['in_progress', 'revision_needed', 'assigned', 'submitted'].includes(task.status);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -361,13 +363,16 @@ export default function TaskDetailsPage({ params }: PageProps) {
 
       {/* Action: open the in-context submission drawer if the task needs work */}
       {canSubmit && (
-        <div className="flex justify-end">
+        <div className="flex flex-col items-end gap-1">
           <button
             onClick={() => setSubmitOpen(true)}
             className="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-medium transition-colors"
           >
-            {task.status === 'revision_needed' ? 'Re-submit Work' : 'Submit Work'}
+            {task.status === 'submitted' ? 'Update submission' : task.status === 'revision_needed' ? 'Re-submit Work' : 'Submit Work'}
           </button>
+          {task.status === 'submitted' && (
+            <p className="text-xs text-slate-400">You can update your work until your mentor reviews it.</p>
+          )}
         </div>
       )}
 

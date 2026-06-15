@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, SkipForward, Check, Loader2,
   TrendingUp, TrendingDown, Minus, Flag, Clock, ClipboardCheck, Keyboard, CheckCircle2, ArrowUpRight, Send, Plus, ListTodo, CalendarClock,
-  Trash2, X, History, RotateCcw, CalendarDays, AlertTriangle, StickyNote,
+  Trash2, X, History, RotateCcw, CalendarDays, AlertTriangle, StickyNote, Search,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useMentorCohort, useMentorApprovals, type CohortMentee, type CohortMomentum, type CohortRisk, type ApprovalItem } from '@/lib/hooks/mentor';
@@ -87,6 +87,37 @@ export default function CohortReview() {
 
   const mentee: CohortMentee | undefined = cohort[idx];
   const menteeId = mentee?.id;
+
+  // ── Search + deep-link: jump to a mentee, and keep ?mentee=<id> in the URL so a
+  // refresh lands on the same person. ──────────────────────────────────────────
+  const [jumpQuery, setJumpQuery] = useState('');
+  const jumpMatches = useMemo(() => {
+    const q = jumpQuery.trim().toLowerCase();
+    if (!q) return [];
+    return cohort.map((m, i) => ({ m, i })).filter(({ m }) => m.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [jumpQuery, cohort]);
+  const menteeParam = searchParams.get('mentee');
+  // Select a mentee AND mirror it into the URL (replace, so a refresh stays put).
+  // All navigation (search, dots, prev/next, deferred chips, up-next) goes through
+  // this so state and the ?mentee= param never drift.
+  const selectMentee = useCallback((i: number) => {
+    if (i < 0 || i >= cohort.length) return;
+    setIdx(i);
+    const id = cohort[i]?.id;
+    if (!id) return;
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    params.set('mentee', id);
+    router.replace(`/mentor/review?${params.toString()}`, { scroll: false });
+  }, [cohort, searchParams, router]);
+  // Restore the current mentee from ?mentee=<id> once the cohort has loaded
+  // (deep-link / refresh). Only acts when the URL points elsewhere, so it never
+  // fights selectMentee.
+  useEffect(() => {
+    if (!cohort.length || !menteeParam) return;
+    const i = cohort.findIndex((m) => m.id === menteeParam);
+    if (i >= 0 && i !== idx) setIdx(i);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cohort, menteeParam]);
   const pending = useMemo(
     () => queue.filter((q) => q.mentee?.id === mentee?.id),
     [queue, mentee?.id]
@@ -269,8 +300,8 @@ export default function CohortReview() {
   };
 
   const go = useCallback((delta: number) => {
-    setIdx((i) => Math.max(0, Math.min(cohort.length - 1, i + delta)));
-  }, [cohort.length]);
+    selectMentee(Math.max(0, Math.min(cohort.length - 1, idx + delta)));
+  }, [selectMentee, cohort.length, idx]);
 
   const skip = useCallback(() => {
     if (mentee && editable) patchEntry(mentee.id, { status: 'deferred' }, true);
@@ -530,12 +561,40 @@ export default function CohortReview() {
         </div>
       </div>
 
+      {/* Jump to a mentee */}
+      <div className="relative max-w-xs">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          value={jumpQuery}
+          onChange={(e) => setJumpQuery(e.target.value)}
+          placeholder="Search a mentee…"
+          className="w-full pl-9 pr-8 py-2 border border-slate-200 rounded-xl text-sm bg-card focus:outline-none focus:ring-2 focus:ring-brand-500"
+        />
+        {jumpQuery && (
+          <button onClick={() => setJumpQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+        )}
+        {jumpMatches.length > 0 && (
+          <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-card shadow-lg dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] py-1">
+            {jumpMatches.map(({ m, i }) => (
+              <button
+                key={m.id}
+                onClick={() => { selectMentee(i); setJumpQuery(''); }}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-50 flex items-center justify-between gap-2 ${i === idx ? 'text-brand-700 font-medium' : 'text-slate-700'}`}
+              >
+                <span className="truncate">{m.name}</span>
+                {attendance[m.id] && <span className="text-[11px] text-slate-400 capitalize shrink-0">{attendance[m.id]}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Progress dots */}
       <div className="flex flex-wrap items-center gap-1.5">
         {cohort.map((m, i) => {
           const a = attendance[m.id];
           const cls = i === idx ? 'bg-slate-900' : a === 'present' ? 'bg-emerald-500' : a === 'absent' ? 'bg-red-500' : seen.has(m.id) ? 'bg-slate-400' : 'bg-slate-200';
-          return <button key={m.id} onClick={() => setIdx(i)} title={m.name} className={`w-2.5 h-2.5 rounded-full ${cls}`} />;
+          return <button key={m.id} onClick={() => selectMentee(i)} title={m.name} className={`w-2.5 h-2.5 rounded-full ${cls}`} />;
         })}
       </div>
 
@@ -545,7 +604,7 @@ export default function CohortReview() {
           {[...deferred].map((id) => {
             const m = cohort.find((x) => x.id === id);
             if (!m) return null;
-            return <button key={id} onClick={() => setIdx(cohort.indexOf(m))} className="px-2 py-0.5 rounded-full bg-card border border-amber-300 text-amber-700 text-xs">{m.name.split(' ')[0]}</button>;
+            return <button key={id} onClick={() => selectMentee(cohort.indexOf(m))} className="px-2 py-0.5 rounded-full bg-card border border-amber-300 text-amber-700 text-xs">{m.name.split(' ')[0]}</button>;
           })}
         </div>
       )}
