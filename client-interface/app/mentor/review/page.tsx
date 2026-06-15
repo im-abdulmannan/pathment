@@ -773,6 +773,15 @@ export default function CohortReview() {
                 </button>
               ))}
             </div>
+            {profile?.lastAttendance?.status && (
+              <p className="text-[11px] text-slate-500 mt-2.5 inline-flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${profile.lastAttendance.status === 'present' ? 'bg-emerald-500' : profile.lastAttendance.status === 'excused' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                Last meeting: <span className="font-medium capitalize text-slate-700">{profile.lastAttendance.status}</span>
+                {profile.lastAttendance.date && (
+                  <span className="text-slate-400">· {new Date(`${profile.lastAttendance.date}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                )}
+              </p>
+            )}
             {session?.status === 'finished' && <p className="text-[11px] text-slate-400 mt-2">This review is finished — reopen it to make changes.</p>}
             {!session && !sessionLoading && <p className="text-[11px] text-amber-600 mt-2">Couldn&apos;t load today&apos;s review session — marks won&apos;t save until it loads.</p>}
           </div>

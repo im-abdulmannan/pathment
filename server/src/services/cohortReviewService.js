@@ -41,14 +41,46 @@ class CohortReviewService {
     return { ...session.toJSON(), entries: entries.map((e) => this._entryJson(e)) };
   }
 
-  /** Ensure an entry exists for every current cohort mentee (cohort may have grown). */
+  /**
+   * Ensure an entry exists for every current cohort mentee who had ALREADY JOINED
+   * by this session's date (the cohort may have grown). A mentee who joined the
+   * clan/system after a meeting was held is intentionally left off that older
+   * session — they couldn't have attended it, so they shouldn't show as absent.
+   * Also clears any stale "phantom" entries for a late-joiner that a previous
+   * (pre-fix) reconcile created — but only ones the mentor never touched.
+   */
   async _reconcileEntries(session, mentorId) {
-    const menteeIds = await cohortService.resolveMenteeIds(mentorId);
-    const existing = await models.CohortReviewEntry.findAll({ where: { sessionId: session.id }, attributes: ['menteeId'] });
+    const [menteeIds, joinDates] = await Promise.all([
+      cohortService.resolveMenteeIds(mentorId),
+      cohortService.menteeJoinDates(mentorId),
+    ]);
+    const sessionDate = String(session.sessionDate); // 'YYYY-MM-DD'
+    const joinedBySession = (id) => {
+      const d = joinDates.get(id);
+      if (!d) return true; // unknown join date → don't hide them
+      return new Date(d).toISOString().slice(0, 10) <= sessionDate;
+    };
+    const eligible = menteeIds.filter(joinedBySession);
+    const eligibleSet = new Set(eligible);
+
+    const existing = await models.CohortReviewEntry.findAll({
+      where: { sessionId: session.id },
+      attributes: ['id', 'menteeId', 'attendance', 'status', 'note'],
+    });
     const have = new Set(existing.map((e) => e.menteeId));
-    const missing = menteeIds.filter((id) => !have.has(id));
+
+    const missing = eligible.filter((id) => !have.has(id));
     if (missing.length) {
       await models.CohortReviewEntry.bulkCreate(missing.map((menteeId) => ({ sessionId: session.id, menteeId, status: 'pending' })));
+    }
+
+    // Remove untouched entries for mentees who hadn't joined by this date (safe:
+    // never deletes one the mentor actually marked — attendance/note/non-pending).
+    const phantomIds = existing
+      .filter((e) => !eligibleSet.has(e.menteeId) && !e.attendance && e.status === 'pending' && !e.note)
+      .map((e) => e.id);
+    if (phantomIds.length) {
+      await models.CohortReviewEntry.destroy({ where: { id: { [Op.in]: phantomIds } } });
     }
   }
 

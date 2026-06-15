@@ -72,6 +72,47 @@ class CohortService {
     return [...ids];
   }
 
+  /**
+   * Earliest date each mentee entered THIS mentor's world (clan membership or a
+   * 1:1 match). Cohort-review sessions dated before a mentee's join date should
+   * NOT list or count them — they couldn't have attended a meeting held before
+   * they arrived. Returns Map(menteeId → Date).
+   */
+  async menteeJoinDates(mentorId) {
+    const map = new Map();
+    const add = (id, d) => {
+      if (!id || !d) return;
+      const dt = new Date(d);
+      const cur = map.get(id);
+      if (!cur || dt < cur) map.set(id, dt);
+    };
+    const { clanIds } = await this.mentorClanMap(mentorId);
+    if (clanIds.length) {
+      const ms = await models.ClanMembership.findAll({
+        where: { clanId: { [Op.in]: clanIds }, role: 'mentee' },
+        attributes: ['userId', 'joinedAt'],
+      });
+      ms.forEach((m) => add(m.userId, m.joinedAt));
+    }
+    const matches = await models.MentorMenteeMatch.findAll({
+      where: { mentorId }, attributes: ['menteeId', 'createdAt'],
+    });
+    matches.forEach((m) => add(m.menteeId, m.createdAt));
+    return map;
+  }
+
+  /** The mentee's most recent cohort-review attendance: { status, date } | null. */
+  async _lastAttendance(menteeId) {
+    if (!models.CohortReviewEntry || !models.CohortReviewSession) return null;
+    const entry = await models.CohortReviewEntry.findOne({
+      where: { menteeId, attendance: { [Op.ne]: null } },
+      include: [{ model: models.CohortReviewSession, as: 'session', attributes: ['sessionDate'], required: true }],
+      order: [[{ model: models.CohortReviewSession, as: 'session' }, 'session_date', 'DESC']],
+    });
+    if (!entry) return null;
+    return { status: entry.attendance, date: entry.session?.sessionDate || null };
+  }
+
   /** Pick the most relevant enrollment for a mentee's cockpit card. */
   pickPrimaryEnrollment(enrollments) {
     if (!enrollments || !enrollments.length) return null;
@@ -242,6 +283,9 @@ class CohortService {
     // Concrete, rule-based "why" chips for the at-risk / review cards (no AI).
     const signals = this._buildSignals({ tasks, lastActiveDays, onTimeRate, openBlockers, highSeverityBlockers, momentum, pendingApprovals });
 
+    // Their most recent cohort-review attendance (for the "last meeting" chip).
+    const lastAttendance = await this._lastAttendance(menteeId);
+
     return {
       id: mentee.id,
       name: `${mentee.firstName} ${mentee.lastName}`.trim(),
@@ -263,6 +307,7 @@ class CohortService {
       signals,
       avgRating: enrollment ? Number(enrollment.avgTaskRating) || 0 : 0,
       lastActive: lastActivityDate ? humanizeDays(lastActiveDays) : 'never',
+      lastAttendance, // { status, date } | null — most recent review attendance
       sentiment: 'neutral'
     };
   }
