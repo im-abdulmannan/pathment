@@ -161,7 +161,9 @@ function PeopleTab() {
             <span className="ml-auto text-xs text-slate-400 tabular-nums">{pagination.total} {pagination.total === 1 ? 'person' : 'people'}</span>
           </div>
 
-          <div className="mt-2 min-h-[40vh] divide-y divide-slate-100">
+          {/* Bounded, scrollable list so the card height stays stable and the
+              pagination bar below never gets pushed off-screen ("out of the area"). */}
+          <div className="mt-2 h-[52vh] min-h-[280px] overflow-y-auto divide-y divide-slate-100 pr-1">
             {loading ? (
               <div className="py-8 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-brand-600" /></div>
             ) : users.length === 0 ? (
@@ -179,7 +181,7 @@ function PeopleTab() {
           </div>
 
           {pagination.total > pagination.limit && (
-            <TablePagination pagination={pagination} isLoading={loading} className="pt-2" />
+            <TablePagination pagination={pagination} isLoading={loading} showPageSize={false} className="pt-3 mt-1 border-t border-slate-100" />
           )}
         </div>
       </div>
