@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import RichTextEditor from '@/components/shared/RichTextEditor';
 import FileUploader from '@/components/shared/FileUploader';
+import { ResourceLink } from '@/components/shared/ResourceLink';
 import { submissionService } from '@/lib/services/submissionService';
 import { useTaskDetail } from '@/lib/hooks/mentee';
 import { PageHeader } from '@/components/admin/ui';
@@ -269,17 +270,7 @@ export default function TaskSubmission({ params }: PageProps) {
             <h3 className="text-sm font-medium text-slate-900 mb-3">Learning Resources</h3>
             <ul className="space-y-2">
               {resources.map((resource: { id: string; url: string; title?: string; type?: string }) => (
-                <li key={resource.id}>
-                  <a 
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-brand-600 hover:underline flex items-center gap-2"
-                  >
-                    <LinkIcon className="w-4 h-4" />
-                    {resource.title}
-                  </a>
-                </li>
+                <ResourceLink key={resource.id} url={resource.url} title={resource.title} />
               ))}
             </ul>
           </div>

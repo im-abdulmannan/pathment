@@ -10,7 +10,6 @@ import {
   Clock,
   Star,
   FileText,
-  Link as LinkIcon,
   BookOpen,
   Sparkles,
   XCircle,
@@ -27,6 +26,7 @@ import {
   RotateCcw,
   StickyNote,
 } from 'lucide-react';
+import { ResourceLink } from '@/components/shared/ResourceLink';
 import { useMentorTaskDetail } from '@/lib/hooks/mentor';
 import taskApi from '@/lib/services/task-api';
 import { extractApiErrorMessage } from '@/lib/utils/api-error';
@@ -342,18 +342,7 @@ export default function MentorTaskDetailsPage({ params }: PageProps) {
             <h3 className="text-sm font-medium text-slate-700 mb-3">Learning Resources</h3>
             <ul className="space-y-2">
               {resources.map((resource: any, index: number) => (
-                <li key={resource.id || resource.url || index}>
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-brand-600 hover:text-brand-800 hover:underline flex items-center gap-2"
-                  >
-                    <LinkIcon className="w-4 h-4" />
-                    {resource.title}
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
+                <ResourceLink key={resource.id || resource.url || index} url={resource.url} title={resource.title} />
               ))}
             </ul>
           </div>

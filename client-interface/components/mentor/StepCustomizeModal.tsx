@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Plus, Link as LinkIcon, ExternalLink, CheckCircle2, Clock, Award, RotateCcw } from 'lucide-react';
+import { X, Plus, CheckCircle2, Clock, Award, RotateCcw } from 'lucide-react';
 import RichTextEditor from '@/components/shared/RichTextEditor';
+import { ResourceLink } from '@/components/shared/ResourceLink';
 import { cleanHtml } from '@/lib/utils/html';
 import type { RoadmapStep } from '@/lib/hooks/mentor';
 
@@ -139,7 +140,7 @@ export function StepCustomizeModal({
                 <div>
                   <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400 mb-1">Resources</p>
                   <ul className="space-y-1">{step.resources.map((r, i) => (
-                    <li key={r.id || r.url || i}><a href={r.url} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-600 hover:underline inline-flex items-center gap-1.5"><LinkIcon className="w-3.5 h-3.5" />{r.title || r.url}<ExternalLink className="w-3 h-3" /></a></li>
+                    <ResourceLink key={r.id || r.url || i} url={r.url} title={r.title} />
                   ))}</ul>
                 </div>
               )}

@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Link as LinkIcon, ExternalLink, CheckCircle2, Clock, Award, Pencil, RotateCcw, Trash2, Loader2, StickyNote } from 'lucide-react';
+import { CheckCircle2, Clock, Award, Pencil, RotateCcw, Trash2, Loader2, StickyNote } from 'lucide-react';
 import { Drawer } from '@/components/shared/Drawer';
+import { ResourceLink } from '@/components/shared/ResourceLink';
 import { TaskEditDrawer } from '@/components/mentor/TaskEditDrawer';
 import taskApi from '@/lib/services/task-api';
 import { extractApiErrorMessage } from '@/lib/utils/api-error';
@@ -130,11 +131,7 @@ export function MenteeTaskDrawer({ task, onClose, onChanged }: { task: any; onCl
               <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400 mb-1">Resources</p>
               <ul className="space-y-1">
                 {resources.map((r, i) => (
-                  <li key={r.id || r.url || i}>
-                    <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-600 hover:underline inline-flex items-center gap-1.5">
-                      <LinkIcon className="w-3.5 h-3.5" />{r.title || r.url}<ExternalLink className="w-3 h-3" />
-                    </a>
-                  </li>
+                  <ResourceLink key={r.id || r.url || i} url={r.url} title={r.title} />
                 ))}
               </ul>
             </div>
