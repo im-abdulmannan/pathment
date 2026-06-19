@@ -760,6 +760,9 @@ class SubmissionService {
       return {
         submissionId: s.id,
         taskId: t.id,
+        // Stable peer-grouping key for the client's "group by task" view. Title
+        // can be per-mentee overridden, so don't group by title.
+        roadmapTaskId: t.roadmapTaskId || null,
         version: s.version,
         submissionText: s.submissionText,
         submissionUrls: s.submissionUrls || [],
@@ -793,26 +796,34 @@ class SubmissionService {
   }
 
   /**
-   * Bulk-approve a set of submissions (used for on-time work). Each goes
-   * through the normal review path so points/notifications/stats all fire.
-   * Returns per-submission results so the caller can report partial failure.
+   * Apply the SAME review decision to a set of submissions. Each goes through
+   * the normal review path so points/notifications/stats all fire. Returns
+   * per-submission results so the caller can report partial failure.
    */
-  async bulkApprove(mentorId, submissionIds = []) {
+  async bulkReview(mentorId, submissionIds = [], reviewData = {}) {
     const results = [];
     for (const submissionId of submissionIds) {
       try {
-        await this.reviewSubmission(submissionId, mentorId, {
-          rating: 5,
-          feedbackText: 'Approved.',
-          isApproved: true,
-          decision: 'approved'
-        });
+        await this.reviewSubmission(submissionId, mentorId, reviewData);
         results.push({ submissionId, ok: true });
       } catch (error) {
         results.push({ submissionId, ok: false, error: error.message });
       }
     }
     return results;
+  }
+
+  /**
+   * Bulk-approve a set of submissions (used for on-time work). Delegates to
+   * bulkReview with the standard approve payload.
+   */
+  async bulkApprove(mentorId, submissionIds = []) {
+    return this.bulkReview(mentorId, submissionIds, {
+      rating: 5,
+      feedbackText: 'Approved.',
+      isApproved: true,
+      decision: 'approved'
+    });
   }
 }
 

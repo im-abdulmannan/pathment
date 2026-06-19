@@ -60,6 +60,16 @@ export const mentorApi = {
   // Approvals queue (pending reviews across the cohort) + bulk approve.
   getApprovals: () => apiClient.get('/mentor/approvals'),
   bulkApprove: (submissionIds: string[]) => apiClient.post('/mentor/approvals/bulk', { submissionIds }),
+  bulkReview: (
+    submissionIds: string[],
+    payload: {
+      decision: 'approved' | 'approved_notes' | 'changes' | 'rejected';
+      rating?: number;
+      feedbackText?: string;
+      revisionNotes?: string;
+      pointsAwarded?: number;
+    }
+  ) => apiClient.post('/mentor/approvals/bulk-review', { submissionIds, ...payload }),
 
   // Send a gentle nudge to a mentee.
   nudge: (menteeId: string, message?: string) => apiClient.post('/mentor/nudge', { menteeId, message }),
