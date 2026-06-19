@@ -149,8 +149,10 @@ export default function FeedbackProvision({ params }: PageProps) {
               {task.difficulty}
             </span>
           </div>
-          <p className="text-slate-600 text-sm mb-4">{taskDescription}</p>
-          
+          {taskDescription && (/<[a-z][\s\S]*>/i.test(taskDescription)
+            ? <div className="prose prose-sm max-w-none dark:prose-invert text-slate-600 dark:text-slate-300 mb-4" dangerouslySetInnerHTML={{ __html: taskDescription }} />
+            : <p className="text-slate-600 text-sm mb-4 whitespace-pre-wrap">{taskDescription}</p>)}
+
           {taskDeliverable && (
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-900"><strong>Expected Deliverable:</strong> {taskDeliverable}</p>
