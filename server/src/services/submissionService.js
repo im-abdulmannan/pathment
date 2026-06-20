@@ -7,6 +7,12 @@ const { NOTIFICATION_EVENTS } = require('../config/notificationMatrix');
 const { endOfDayInZone } = require('../utils/timezone');
 const authzService = require('./authzService');
 const { PERMISSIONS } = require('../config/permissions');
+const { pointsForDifficulty } = require('../config/points');
+
+/** Standard points for a submission's task, derived solely from difficulty. */
+function taskStandardPoints(task) {
+  return pointsForDifficulty(task?.roadmapTask?.difficulty);
+}
 
 class SubmissionService {
   /**
@@ -349,23 +355,9 @@ class SubmissionService {
       throw new ValidationError('Rating must be between 0 and 5');
     }
 
-    const maxPoints = task.pointsBase ?? task.roadmapTask?.pointsBase ?? 10;
-
-    if (isApproved && pointsAwarded !== undefined && pointsAwarded !== null) {
-      const parsedPoints = Number(pointsAwarded);
-
-      if (!Number.isFinite(parsedPoints)) {
-        throw new ValidationError('Points awarded must be a valid number');
-      }
-
-      if (parsedPoints < 0) {
-        throw new ValidationError('Points awarded cannot be less than 0');
-      }
-
-      if (parsedPoints > maxPoints) {
-        throw new ValidationError(`Points awarded cannot be greater than maximum marks ${maxPoints}`);
-      }
-    }
+    // Points are STANDARD by difficulty — not chosen by the mentor. Same
+    // difficulty always earns the same points (fair, ungameable leaderboard).
+    const standardPoints = taskStandardPoints(task);
 
     // Create feedback
     const feedbackType = inlineFeedback && inlineFeedback.length > 0 ? 'both' : 'general';
@@ -399,9 +391,7 @@ class SubmissionService {
 
     if (isApproved) {
       updateData.completedAt = new Date();
-      const parsedPoints = Number(pointsAwarded);
-      const safePoints = Number.isFinite(parsedPoints) ? parsedPoints : maxPoints;
-      updateData.pointsAwarded = safePoints;
+      updateData.pointsAwarded = standardPoints;
     } else {
       updateData.revisionCount = task.revisionCount + 1;
     }
@@ -562,33 +552,12 @@ class SubmissionService {
       feedbackText,
       inlineFeedback,
       revisionNotes,
-      pointsAwarded,
       criteriaMet,
       checkedCriteria
     } = reviewData;
 
     if (rating !== undefined && rating !== null && (rating < 0 || rating > 5)) {
       throw new ValidationError('Rating must be between 0 and 5');
-    }
-
-    const maxPoints = task.pointsBase ?? task.roadmapTask?.pointsBase ?? 10;
-
-    // Points are only meaningful on an approved task. Capture the previous value
-    // so we can reconcile only the delta with gamification.
-    const oldPoints = Number(task.pointsAwarded || 0);
-    let newPoints = oldPoints;
-    if (isApproved && pointsAwarded !== undefined && pointsAwarded !== null) {
-      const parsedPoints = Number(pointsAwarded);
-      if (!Number.isFinite(parsedPoints)) {
-        throw new ValidationError('Points awarded must be a valid number');
-      }
-      if (parsedPoints < 0) {
-        throw new ValidationError('Points awarded cannot be less than 0');
-      }
-      if (parsedPoints > maxPoints) {
-        throw new ValidationError(`Points awarded cannot be greater than maximum marks ${maxPoints}`);
-      }
-      newPoints = parsedPoints;
     }
 
     // Update the feedback row in place (only provided fields change).
@@ -606,38 +575,12 @@ class SubmissionService {
       feedbackType: (nextInline && nextInline.length > 0) ? 'both' : 'general'
     });
 
-    // Keep the task's final rating + points in sync with the edited review.
-    const taskUpdate = { finalRating: nextRating };
-    if (isApproved) {
-      taskUpdate.pointsAwarded = newPoints;
-    }
-    await task.update(taskUpdate);
+    // Keep the task's final rating in sync. Points are fixed by difficulty and
+    // not editable here, so they are intentionally left untouched.
+    await task.update({ finalRating: nextRating });
 
-    // Reconcile the points difference (positive or negative) so the mentee's
-    // running total, level, leaderboard, and badges reflect the corrected score.
-    if (isApproved && newPoints !== oldPoints) {
-      const gamificationService = require('./gamificationService');
-      try {
-        await gamificationService.adjustPoints(
-          task.menteeId,
-          newPoints - oldPoints,
-          'task_review_edit',
-          task.id,
-          `Review edited: "${task.title || task.id}"`
-        );
-        await this.updateMenteeGamificationProgress(task.menteeId);
-      } catch (gamificationError) {
-        console.error('[Gamification] editReview points reconcile failed:', {
-          submissionId,
-          taskId: task.id,
-          menteeId: task.menteeId,
-          error: gamificationError.message
-        });
-      }
-    } else {
-      // Rating changed but points did not — still refresh the mentee's avg rating.
-      await this.updateMenteeGamificationProgress(task.menteeId);
-    }
+    // Refresh the mentee's avg rating (points are unchanged).
+    await this.updateMenteeGamificationProgress(task.menteeId);
 
     // Mentor's average-rating stat may have shifted.
     await this.updateMentorReviewStats(mentorId);
@@ -883,7 +826,7 @@ class SubmissionService {
         required: true,
         where: { mentorId },
         include: [
-          { model: models.RoadmapTask, as: 'roadmapTask', attributes: ['title', 'type', 'description', 'deliverable', 'acceptanceCriteria', 'pointsBase'] },
+          { model: models.RoadmapTask, as: 'roadmapTask', attributes: ['title', 'type', 'description', 'deliverable', 'acceptanceCriteria', 'pointsBase', 'difficulty'] },
           { model: models.User, as: 'mentee', attributes: ['id', 'firstName', 'lastName', 'profilePictureUrl'] }
         ]
       }],
@@ -954,7 +897,7 @@ class SubmissionService {
         deliverable: t.deliverableOverride || t.roadmapTask?.deliverable || null,
         criteria: (Array.isArray(t.acceptanceCriteriaOverride) && t.acceptanceCriteriaOverride.length)
           ? t.acceptanceCriteriaOverride : (t.roadmapTask?.acceptanceCriteria || []),
-        maxPoints: t.pointsBase ?? t.roadmapTask?.pointsBase ?? 10,
+        maxPoints: pointsForDifficulty(t.roadmapTask?.difficulty),
         mentee: m ? {
           id: m.id,
           name: `${m.firstName} ${m.lastName}`.trim(),
