@@ -32,6 +32,7 @@ export default function FeedbackProvision({ params }: PageProps) {
     loading,
     isSubmitting,
     showSuccess,
+    alreadyReviewed,
     rating,
     hoveredRating,
     feedbackText,
@@ -97,7 +98,7 @@ export default function FeedbackProvision({ params }: PageProps) {
         <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-green-900">Feedback submitted successfully!</p>
+            <p className="text-green-900">{alreadyReviewed ? 'Review updated successfully!' : 'Feedback submitted successfully!'}</p>
             <p className="text-green-700 text-sm mt-1">Your mentee will be notified.</p>
           </div>
         </div>
@@ -254,7 +255,17 @@ export default function FeedbackProvision({ params }: PageProps) {
 
       {/* Review Form */}
       <form onSubmit={handleSubmit} className="bg-card rounded-2xl border border-slate-200 p-6 space-y-6">
-        <h3 className="text-lg text-slate-900">Provide Feedback</h3>
+        <h3 className="text-lg text-slate-900">{alreadyReviewed ? 'Edit Review' : 'Provide Feedback'}</h3>
+
+        {alreadyReviewed && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-900">
+              You already reviewed this submission. You can correct the feedback, rating
+              {decision === 'approve' ? ', and points' : ''}. The decision stays the same.
+            </p>
+          </div>
+        )}
 
         {/* Rating */}
         <div>
@@ -368,12 +379,13 @@ export default function FeedbackProvision({ params }: PageProps) {
           <div className="grid grid-cols-2 gap-4">
             <button
               type="button"
-              onClick={() => { setDecision('approve'); setDecisionError(''); }}
+              disabled={alreadyReviewed}
+              onClick={() => { if (alreadyReviewed) return; setDecision('approve'); setDecisionError(''); }}
               className={`p-4 border-2 rounded-xl flex items-center gap-3 transition-all ${
                 decision === 'approve'
                   ? 'border-green-500 bg-green-50'
                   : 'border-slate-200 hover:border-green-300'
-              }`}
+              } ${alreadyReviewed && decision !== 'approve' ? 'opacity-40 cursor-not-allowed' : ''} ${alreadyReviewed ? 'cursor-default' : ''}`}
             >
               <ThumbsUp className={`w-6 h-6 ${decision === 'approve' ? 'text-green-600' : 'text-slate-400'}`} />
               <div className="text-left">
@@ -383,12 +395,13 @@ export default function FeedbackProvision({ params }: PageProps) {
             </button>
             <button
               type="button"
-              onClick={() => { setDecision('revision'); setDecisionError(''); }}
+              disabled={alreadyReviewed}
+              onClick={() => { if (alreadyReviewed) return; setDecision('revision'); setDecisionError(''); }}
               className={`p-4 border-2 rounded-xl flex items-center gap-3 transition-all ${
                 decision === 'revision'
                   ? 'border-orange-500 bg-orange-50'
                   : 'border-slate-200 hover:border-orange-300'
-              }`}
+              } ${alreadyReviewed && decision !== 'revision' ? 'opacity-40 cursor-not-allowed' : ''} ${alreadyReviewed ? 'cursor-default' : ''}`}
             >
               <RotateCw className={`w-6 h-6 ${decision === 'revision' ? 'text-orange-600' : 'text-slate-400'}`} />
               <div className="text-left">
@@ -477,12 +490,12 @@ export default function FeedbackProvision({ params }: PageProps) {
             {isSubmitting ? (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Submitting...
+                {alreadyReviewed ? 'Saving...' : 'Submitting...'}
               </>
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                Submit Review
+                {alreadyReviewed ? 'Save Changes' : 'Submit Review'}
               </>
             )}
           </button>

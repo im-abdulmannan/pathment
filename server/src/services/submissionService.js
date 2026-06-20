@@ -513,6 +513,165 @@ class SubmissionService {
   }
 
   /**
+   * Edit an already-submitted review: correct the feedback text, inline notes,
+   * rating, and (for an approved task) the points awarded — WITHOUT changing the
+   * decision. The original decision stands (approved stays approved, revision
+   * stays revision); this is for fixing a review, not redoing it. Only the
+   * mentor who wrote the review may edit it. When the points change on an
+   * approved task we reconcile the difference with gamification so the mentee's
+   * running total stays correct.
+   */
+  async editReview(submissionId, mentorId, reviewData) {
+    const submission = await models.TaskSubmission.findByPk(submissionId, {
+      include: [{
+        model: models.AssignedTask,
+        as: 'assignedTask',
+        include: [{ model: models.RoadmapTask, as: 'roadmapTask' }]
+      }]
+    });
+
+    if (!submission) {
+      throw new NotFoundError('Submission not found');
+    }
+
+    if (submission.status !== 'approved' && submission.status !== 'revision_needed') {
+      throw new ValidationError('Only a reviewed submission can be edited');
+    }
+
+    const task = submission.assignedTask;
+
+    // The latest feedback row for this submission is the review being edited.
+    const feedback = await models.TaskFeedback.findOne({
+      where: { submissionId: submission.id },
+      order: [['createdAt', 'DESC']]
+    });
+
+    if (!feedback) {
+      throw new NotFoundError('No review found to edit');
+    }
+
+    // Only the mentor who wrote the review may edit it.
+    if (feedback.mentorId !== mentorId) {
+      throw new ForbiddenError('Only the mentor who wrote this review can edit it');
+    }
+
+    const isApproved = submission.status === 'approved';
+
+    const {
+      rating,
+      feedbackText,
+      inlineFeedback,
+      revisionNotes,
+      pointsAwarded,
+      criteriaMet,
+      checkedCriteria
+    } = reviewData;
+
+    if (rating !== undefined && rating !== null && (rating < 0 || rating > 5)) {
+      throw new ValidationError('Rating must be between 0 and 5');
+    }
+
+    const maxPoints = task.pointsBase ?? task.roadmapTask?.pointsBase ?? 10;
+
+    // Points are only meaningful on an approved task. Capture the previous value
+    // so we can reconcile only the delta with gamification.
+    const oldPoints = Number(task.pointsAwarded || 0);
+    let newPoints = oldPoints;
+    if (isApproved && pointsAwarded !== undefined && pointsAwarded !== null) {
+      const parsedPoints = Number(pointsAwarded);
+      if (!Number.isFinite(parsedPoints)) {
+        throw new ValidationError('Points awarded must be a valid number');
+      }
+      if (parsedPoints < 0) {
+        throw new ValidationError('Points awarded cannot be less than 0');
+      }
+      if (parsedPoints > maxPoints) {
+        throw new ValidationError(`Points awarded cannot be greater than maximum marks ${maxPoints}`);
+      }
+      newPoints = parsedPoints;
+    }
+
+    // Update the feedback row in place (only provided fields change).
+    const nextFeedbackText = feedbackText !== undefined ? feedbackText : feedback.feedbackText;
+    const nextInline = inlineFeedback !== undefined ? (inlineFeedback || null) : feedback.inlineFeedback;
+    const nextRating = (rating !== undefined && rating !== null) ? rating : feedback.rating;
+    await feedback.update({
+      feedbackText: nextFeedbackText,
+      inlineFeedback: nextInline,
+      rating: nextRating,
+      // Revision notes only apply to a revision decision; approved stays null.
+      revisionNotes: isApproved ? null : (revisionNotes !== undefined ? revisionNotes : feedback.revisionNotes),
+      criteriaMet: criteriaMet !== undefined ? (criteriaMet || null) : feedback.criteriaMet,
+      checkedCriteria: checkedCriteria !== undefined ? (checkedCriteria || null) : feedback.checkedCriteria,
+      feedbackType: (nextInline && nextInline.length > 0) ? 'both' : 'general'
+    });
+
+    // Keep the task's final rating + points in sync with the edited review.
+    const taskUpdate = { finalRating: nextRating };
+    if (isApproved) {
+      taskUpdate.pointsAwarded = newPoints;
+    }
+    await task.update(taskUpdate);
+
+    // Reconcile the points difference (positive or negative) so the mentee's
+    // running total, level, leaderboard, and badges reflect the corrected score.
+    if (isApproved && newPoints !== oldPoints) {
+      const gamificationService = require('./gamificationService');
+      try {
+        await gamificationService.adjustPoints(
+          task.menteeId,
+          newPoints - oldPoints,
+          'task_review_edit',
+          task.id,
+          `Review edited: "${task.title || task.id}"`
+        );
+        await this.updateMenteeGamificationProgress(task.menteeId);
+      } catch (gamificationError) {
+        console.error('[Gamification] editReview points reconcile failed:', {
+          submissionId,
+          taskId: task.id,
+          menteeId: task.menteeId,
+          error: gamificationError.message
+        });
+      }
+    } else {
+      // Rating changed but points did not — still refresh the mentee's avg rating.
+      await this.updateMenteeGamificationProgress(task.menteeId);
+    }
+
+    // Mentor's average-rating stat may have shifted.
+    await this.updateMentorReviewStats(mentorId);
+
+    const edited = await this.getSubmissionById(submissionId);
+    const editedTitle = edited.assignedTask?.roadmapTask?.title || 'your task';
+
+    // Tell the mentee their feedback was updated (best-effort; never block).
+    try {
+      await notificationOrchestrator.dispatch({
+        eventKey: NOTIFICATION_EVENTS.FEEDBACK_SENT,
+        recipients: [{ userId: task.menteeId }],
+        payload: {
+          title: `Your mentor updated their feedback`,
+          message: `The review on “${editedTitle}” was updated. Take a look when you get a moment.`,
+          actionUrl: `/mentee/tasks/${task.id}`,
+          actionLabel: 'Read feedback',
+          relatedEntityType: 'task_feedback',
+          relatedEntityId: submission.id,
+          emailSubject: `Updated feedback on “${editedTitle}”`
+        },
+        dedupe: {
+          relatedEntityType: 'feedback_edited',
+          relatedEntityId: submission.id
+        }
+      });
+    } catch (notifyError) {
+      console.error('[editReview] mentee notification failed (non-fatal):', notifyError.message);
+    }
+
+    return edited;
+  }
+
+  /**
    * Get submission by ID with all related data
    */
   async getSubmissionById(submissionId) {

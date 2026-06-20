@@ -68,6 +68,19 @@ router.post(
 );
 
 /**
+ * @route   PATCH /api/submissions/:submissionId/review
+ * @desc    Edit an already-submitted review (feedback, rating, points). Only the
+ *          reviewing mentor may edit; the decision is unchanged.
+ * @access  Mentor (original reviewer), Admin
+ */
+router.patch(
+  '/:submissionId/review',
+  authenticate,
+  requirePermission(PERMISSIONS.TASK_REVIEW, scope.submission('submissionId')),
+  submissionController.editReview
+);
+
+/**
  * @route   POST /api/submissions/:submissionId/extension/handle
  * @desc    Approve or reject extension request
  * @access  Mentor, Admin
