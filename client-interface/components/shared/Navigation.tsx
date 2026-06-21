@@ -333,12 +333,8 @@ export default function Navigation({ role }: NavigationProps) {
           {/* Brand — own row so the logo reads cleanly */}
           <div className="px-4 pt-5 pb-3">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-700 rounded-2xl shadow-sm shadow-brand-300/50 shrink-0">
-                <svg viewBox="0 0 512 512" className="w-6 h-6" fill="none" aria-hidden="true">
-                  <path d="M196 388 V176 C 196 126 346 126 346 216 C 346 300 256 306 196 264" stroke="#fff" strokeWidth="44" strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="196" cy="388" r="28" fill="#fff" />
-                </svg>
-              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-tile.png" alt="Pathment" className="w-11 h-11 rounded-2xl shadow-sm shrink-0" />
               <div className="min-w-0">
                 <div className="font-bold text-slate-900 text-base leading-tight truncate">Pathment</div>
                 <div className="text-slate-400 text-xs capitalize truncate">{role} portal</div>
@@ -416,12 +412,8 @@ export default function Navigation({ role }: NavigationProps) {
       <div className="lg:hidden fixed top-0 left-0 right-0 glass border-b border-slate-100 dark:border-slate-700 z-60">
         <div className="flex items-center justify-between px-4 py-3.5">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-9 h-9 bg-gradient-to-br from-brand-500 to-brand-700 rounded-2xl shadow-sm shadow-brand-300/50">
-              <svg viewBox="0 0 512 512" className="w-5 h-5" fill="none" aria-hidden="true">
-                <path d="M196 388 V176 C 196 126 346 126 346 216 C 346 300 256 306 196 264" stroke="#fff" strokeWidth="44" strokeLinecap="round" strokeLinejoin="round" />
-                <circle cx="196" cy="388" r="28" fill="#fff" />
-              </svg>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-tile.png" alt="Pathment" className="w-10 h-10 rounded-2xl shadow-sm" />
             <div>
               <div className="font-semibold text-slate-900 text-sm">Pathment</div>
               <div className="text-slate-400 text-xs capitalize">{role}</div>
