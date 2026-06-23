@@ -362,14 +362,16 @@ export default function Navigation({ role }: NavigationProps) {
             <span data-tour="notifications" className="flex-1 flex justify-center">
               {user?.id && <NotificationDrawer userId={user.id} apiBaseUrl={apiBaseUrl} />}
             </span>
-            <button
-              onClick={() => setFeedbackOpen(true)}
-              title="Send feedback / report a bug"
-              aria-label="Send feedback"
-              className="flex-1 flex items-center justify-center p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors"
-            >
-              <MessageSquarePlus className="w-5 h-5" />
-            </button>
+            <span data-tour="feedback" className="flex-1 flex justify-center">
+              <button
+                onClick={() => setFeedbackOpen(true)}
+                title="Send feedback / report a bug"
+                aria-label="Send feedback"
+                className="w-full flex items-center justify-center p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+              >
+                <MessageSquarePlus className="w-5 h-5" />
+              </button>
+            </span>
             <Link
               href={`/${role}/settings`}
               title="Settings"

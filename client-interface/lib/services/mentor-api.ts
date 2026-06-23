@@ -62,6 +62,8 @@ export const mentorApi = {
 
   // Approvals queue (pending reviews across the cohort) + bulk approve.
   getApprovals: () => apiClient.get('/mentor/approvals'),
+  // Tasks the mentor sent back for changes, awaiting the mentee's resubmission.
+  getChangesRequested: () => apiClient.get('/mentor/approvals/changes-requested'),
   bulkApprove: (submissionIds: string[]) => apiClient.post('/mentor/approvals/bulk', { submissionIds }),
   bulkReview: (
     submissionIds: string[],

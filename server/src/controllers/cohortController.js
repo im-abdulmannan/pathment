@@ -67,6 +67,15 @@ const getApprovals = catchAsync(async (req, res) => {
 });
 
 /**
+ * GET /api/mentor/approvals/changes-requested
+ * Tasks the mentor sent back for changes that are awaiting a resubmission.
+ */
+const getChangesRequested = catchAsync(async (req, res) => {
+  const items = await submissionService.getMentorChangesRequestedQueue(req.user.id);
+  res.status(200).json(successResponse('Changes-requested queue retrieved', { items }));
+});
+
+/**
  * POST /api/mentor/approvals/bulk  { submissionIds: [] }
  * Bulk-approve on-time submissions.
  */
@@ -183,4 +192,4 @@ const getMenteeAttendanceHistory = catchAsync(async (req, res) => {
   res.status(200).json(successResponse('Attendance history', { history }));
 });
 
-module.exports = { getCohort, getCohortActivity, getCohortReportSummary, getMenteeProfile, getApprovals, bulkApprove, bulkReview, nudge, getMyProgress, updatePersonality, addInsight, logMeetingNote, addCollaborator, removeCollaborator, setAttendance, getReviewAttendance, getMenteeAttendanceHistory };
+module.exports = { getCohort, getCohortActivity, getCohortReportSummary, getMenteeProfile, getApprovals, getChangesRequested, bulkApprove, bulkReview, nudge, getMyProgress, updatePersonality, addInsight, logMeetingNote, addCollaborator, removeCollaborator, setAttendance, getReviewAttendance, getMenteeAttendanceHistory };

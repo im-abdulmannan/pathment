@@ -50,7 +50,9 @@ export default function MentorMentees() {
       </div>
 
       {/* Inactive mentees: suggested-to-pause queue + currently paused list. */}
-      <PausedMenteesPanel />
+      <div data-tour="paused-mentees">
+        <PausedMenteesPanel />
+      </div>
 
       {/* Search + status filter */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">

@@ -911,6 +911,58 @@ class SubmissionService {
   }
 
   /**
+   * Tasks this mentor sent back for changes that are STILL awaiting a resubmission.
+   * When a mentor requests changes the AssignedTask moves to 'revision_needed';
+   * the moment the mentee resubmits it flips back to 'submitted' (and re-appears in
+   * the to-review queue), so filtering on status='revision_needed' is exactly the
+   * "waiting on the mentee" set. We attach the most recent revision feedback so the
+   * mentor can see what they asked for without opening the task.
+   */
+  async getMentorChangesRequestedQueue(mentorId) {
+    const tasks = await models.AssignedTask.findAll({
+      where: { mentorId, status: 'revision_needed' },
+      include: [
+        { model: models.RoadmapTask, as: 'roadmapTask', attributes: ['title', 'type', 'difficulty'] },
+        { model: models.User, as: 'mentee', attributes: ['id', 'firstName', 'lastName', 'profilePictureUrl'] },
+        {
+          model: models.TaskFeedback,
+          as: 'feedback',
+          required: false,
+          attributes: ['id', 'revisionNotes', 'feedbackText', 'decision', 'isApproved', 'createdAt'],
+        },
+      ],
+      order: [['updatedAt', 'DESC']],
+    });
+
+    return tasks.map((t) => {
+      const m = t.mentee;
+      // Latest "changes requested" feedback (newest first). isApproved=false covers
+      // legacy rows written before the explicit decision field existed.
+      const latestFb = (t.feedback || [])
+        .filter((f) => f.decision === 'changes' || f.isApproved === false)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0] || null;
+      return {
+        taskId: t.id,
+        roadmapTaskId: t.roadmapTaskId || null,
+        title: t.titleOverride || t.roadmapTask?.title || 'Task',
+        type: t.roadmapTask?.type || null,
+        revisionCount: t.revisionCount || 0,
+        revisionNotes: latestFb?.revisionNotes || null,
+        feedbackText: latestFb?.feedbackText || null,
+        // When we asked for changes (falls back to the task's last update).
+        requestedAt: latestFb?.createdAt || t.updatedAt,
+        dueDate: t.dueDate || null,
+        isLate: t.isLate,
+        mentee: m ? {
+          id: m.id,
+          name: `${m.firstName} ${m.lastName}`.trim(),
+          avatar: `${(m.firstName || '').charAt(0)}${(m.lastName || '').charAt(0)}`.toUpperCase(),
+        } : null,
+      };
+    });
+  }
+
+  /**
    * Apply the SAME review decision to a set of submissions. Each goes through
    * the normal review path so points/notifications/stats all fire. Returns
    * per-submission results so the caller can report partial failure.
