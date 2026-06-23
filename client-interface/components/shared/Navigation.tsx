@@ -17,6 +17,7 @@ import {
   Check,
   Settings,
   HelpCircle,
+  MessageSquarePlus,
   ShieldCheck,
   Search,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useClan, ALL_CLANS } from '@/lib/context/ClanContext';
 import { SelectMenu } from './SelectMenu';
 import { CommandPalette } from './CommandPalette';
+import { FeedbackDrawer } from './FeedbackDrawer';
 import { NotificationDrawer } from './NotificationDrawer';
 import { ChangelogDrawer } from './ChangelogDrawer';
 import { UserProfileCard } from './UserProfileCard';
@@ -50,6 +52,7 @@ export default function Navigation({ role }: NavigationProps) {
   const { logout, user, availableRoles, setActiveRole } = useAuth();
   const { clans, activeClanId, setActiveClanId } = useClan();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -325,6 +328,7 @@ export default function Navigation({ role }: NavigationProps) {
   return (
     <>
       <CommandPalette role={role} />
+      <FeedbackDrawer open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 
       {/* ── Desktop Sidebar ── */}
       <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-card border-r border-slate-100">
@@ -358,6 +362,14 @@ export default function Navigation({ role }: NavigationProps) {
             <span data-tour="notifications" className="flex-1 flex justify-center">
               {user?.id && <NotificationDrawer userId={user.id} apiBaseUrl={apiBaseUrl} />}
             </span>
+            <button
+              onClick={() => setFeedbackOpen(true)}
+              title="Send feedback / report a bug"
+              aria-label="Send feedback"
+              className="flex-1 flex items-center justify-center p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition-colors"
+            >
+              <MessageSquarePlus className="w-5 h-5" />
+            </button>
             <Link
               href={`/${role}/settings`}
               title="Settings"

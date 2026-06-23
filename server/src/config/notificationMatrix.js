@@ -32,7 +32,9 @@ EXTENSION_HANDLED: 'extension_handled',
   REVIEW_UNLOCK_HANDLED: 'review_unlock_handled',
   MENTEE_PAUSE_SUGGESTED: 'mentee_pause_suggested',
   MENTEE_REENGAGE: 'mentee_reengage',
-  MENTEE_RETURNED: 'mentee_returned'
+  MENTEE_RETURNED: 'mentee_returned',
+  FEEDBACK_SUBMITTED: 'feedback_submitted',
+  FEEDBACK_STATUS_UPDATED: 'feedback_status_updated'
 };
 
 const NOTIFICATION_MATRIX = {
@@ -210,6 +212,18 @@ const NOTIFICATION_MATRIX = {
     type: 'system',
     preferenceKey: 'mentee_returned',
     channels: { inApp: true, email: true, chat: false }
+  },
+  // A new feedback/bug report was submitted (to admins, in-app only).
+  [NOTIFICATION_EVENTS.FEEDBACK_SUBMITTED]: {
+    type: 'system',
+    preferenceKey: 'feedback_submitted',
+    channels: { inApp: true, email: false, chat: false }
+  },
+  // A reporter's feedback changed status (to the reporter, in-app + email).
+  [NOTIFICATION_EVENTS.FEEDBACK_STATUS_UPDATED]: {
+    type: 'system',
+    preferenceKey: 'feedback_status_updated',
+    channels: { inApp: true, email: true, chat: false }
   }
 };
 
@@ -240,7 +254,8 @@ const EMAIL_PREFERENCE_CATEGORIES = [
   { group: 'Milestones', key: 'program_completed', label: 'A program is completed' },
   { group: 'Digests', key: 'weekly_progress_report', label: 'Weekly progress report' },
   { group: 'Program', key: 'mentee_returned', label: 'A paused mentee returns to my clan' },
-  { group: 'Program', key: 'mentee_reengage', label: 'Reminders to come back when I\'m paused' }
+  { group: 'Program', key: 'mentee_reengage', label: 'Reminders to come back when I\'m paused' },
+  { group: 'Program', key: 'feedback_status_updated', label: 'Updates on my feedback / bug reports' }
 ];
 
 module.exports = {
