@@ -267,13 +267,13 @@ class MentorshipPauseService {
             message: `Hey ${first}, your spot in ${clanName} is still here. One small step this week gets your momentum back - jump in whenever you're ready.`,
             actionUrl: '/mentee/tasks',
             actionLabel: 'Pick up where I left off',
-            relatedEntityType: 'clan',
-            relatedEntityId: m.clanId,
             emailSubject: `Your clan is waiting for you`,
+            // Intentionally NO relatedEntityType/relatedEntityId: the orchestrator
+            // dedupes (in-app) and builds the email idempotency key from those, so
+            // reusing the clan id would collapse every cadence touch into one send.
+            // The reengageStage state machine below already guarantees one send per
+            // stage, so we want each touch to go through cleanly.
           },
-          // No dedupe key: the reengageStage state machine below already
-          // guarantees each cadence touch sends exactly once (and a string
-          // dedupe id is not a valid UUID for the notifications table).
         });
         await m.update({ reengageStage: m.reengageStage + 1, reengageCount: m.reengageCount + 1, lastReengagedAt: new Date() });
         sent += 1;
@@ -313,9 +313,9 @@ class MentorshipPauseService {
                 message: `${this._name(mentee)} re-engaged in ${clan?.name || 'your clan'} (${trigger}) and has been moved back to active.`,
                 actionUrl: `/mentor/mentees/${menteeId}`,
                 actionLabel: 'View mentee',
-                relatedEntityType: 'user',
-                relatedEntityId: menteeId,
                 emailSubject: `${this._name(mentee)} returned to your clan`,
+                // No relatedEntityType/relatedEntityId on purpose, so a later
+                // pause→return episode isn't deduped against an earlier "is back".
               },
             });
           }
