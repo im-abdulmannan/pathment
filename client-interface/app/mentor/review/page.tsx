@@ -108,6 +108,12 @@ export default function CohortReview() {
   const mentee: CohortMentee | undefined = cohort[idx];
   const menteeId = mentee?.id;
 
+  // Keep idx in range when the cohort shrinks (e.g. after pausing a mentee, who
+  // drops out of the list). Without this, idx can point past the end → crash.
+  useEffect(() => {
+    if (cohort.length && idx > cohort.length - 1) setIdx(cohort.length - 1);
+  }, [cohort.length, idx]);
+
   // ── Search + deep-link: jump to a mentee, and keep ?mentee=<id> in the URL so a
   // refresh lands on the same person. ──────────────────────────────────────────
   const [jumpQuery, setJumpQuery] = useState('');
@@ -623,6 +629,13 @@ export default function CohortReview() {
     <div className="bg-card rounded-2xl border border-slate-200 py-16 text-center max-w-2xl">
       <p className="text-slate-600">No mentees to review yet.</p>
     </div>
+  );
+
+  // The current index can briefly point past the end right after the cohort
+  // shrinks (e.g. you just paused this mentee). Render nothing for that one
+  // frame instead of dereferencing an undefined mentee and crashing.
+  if (!mentee) return (
+    <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>
   );
 
   const risk = RISK_PILL[mentee!.risk];
